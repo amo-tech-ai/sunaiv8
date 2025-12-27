@@ -7,9 +7,19 @@ interface MarketReportViewProps {
   report: MarketReport;
   onClose: () => void;
   onExport?: () => void;
+  onGenerateTasks?: (taskTitles: string[]) => void;
 }
 
-const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, onClose, onExport }) => {
+const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, onClose, onExport, onGenerateTasks }) => {
+  
+  const handleGenerateRoadmap = () => {
+    if (onGenerateTasks && report.suggestedAutomations) {
+      const titles = report.suggestedAutomations.map(a => `Implement: ${a.workflow}`);
+      onGenerateTasks(titles);
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in slide-in-from-bottom-12 duration-500 overflow-hidden">
       {/* Header */}
@@ -67,6 +77,12 @@ const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, on
               <p className="text-[20px] font-serif leading-relaxed text-gray-800 italic">
                 "{report.industryOverview}"
               </p>
+              {report.localIntelligence && (
+                <div className="mt-8 p-6 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                  <h4 className="text-[10px] uppercase font-bold text-blue-400 mb-2">Local Infrastructure Intel</h4>
+                  <p className="text-[13px] text-blue-900 font-serif italic leading-relaxed">{report.localIntelligence}</p>
+                </div>
+              )}
             </section>
 
             <section className="animate-in fade-in slide-in-from-left-4 duration-700 delay-150">
@@ -106,12 +122,20 @@ const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, on
             </section>
 
             <section className="animate-in fade-in slide-in-from-left-4 duration-700 delay-500">
-              <h2 className="text-[11px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-6">4. AI Automation Roadmap</h2>
+              <div className="flex justify-between items-end mb-6">
+                <h2 className="text-[11px] uppercase tracking-[0.2em] font-bold text-gray-400">4. AI Automation Roadmap</h2>
+                <button 
+                  onClick={handleGenerateRoadmap}
+                  className="bg-black text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-md active:scale-95"
+                >
+                  ✨ Inject into Task Board
+                </button>
+              </div>
               <div className="space-y-4">
                 {report.suggestedAutomations.map((auto, i) => (
-                  <div key={i} className="flex justify-between items-center py-5 px-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-emerald-200 transition-all cursor-default">
+                  <div key={i} className="flex justify-between items-center py-5 px-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-emerald-200 transition-all cursor-default group">
                     <div>
-                      <span className="text-[15px] font-medium text-gray-900 block mb-1">{auto.workflow}</span>
+                      <span className="text-[15px] font-medium text-gray-900 block mb-1 group-hover:text-emerald-600 transition-colors">{auto.workflow}</span>
                       <p className="text-[12px] text-gray-400 font-serif italic">{auto.benefit}</p>
                     </div>
                     <span className={`text-[10px] uppercase font-bold px-4 py-1.5 rounded-full ${
@@ -158,11 +182,11 @@ const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, on
 
           <div className="mt-24 pt-10 border-t border-gray-100">
              <div className="flex items-center space-x-3 mb-4">
-               <span className="text-[18px]">🛡️</span>
+               <span className="text-xl">🛡️</span>
                <h3 className="text-[11px] uppercase font-bold text-gray-900">Truthfulness Score</h3>
              </div>
              <p className="text-[13px] text-gray-500 font-serif italic leading-relaxed mb-6">
-               This intelligence artifact was cross-referenced across 5 verified news portals and financial databases to ensure 100% factual accuracy.
+               This intelligence artifact was cross-referenced across verified news portals and financial databases to ensure 100% factual accuracy.
              </p>
              <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 w-[96%]" />

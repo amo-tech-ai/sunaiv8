@@ -8,11 +8,11 @@ interface RightPanelIntelligenceProps {
   loading: boolean;
   onBudgetUpdate: (leadId: string) => void;
   onApprovePlan: () => void;
-  onRevisePlan?: () => void;
+  onAddTaskFromAI: (title: string) => void;
 }
 
 const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({ 
-  focus, insight, loading, onBudgetUpdate, onApprovePlan, onRevisePlan 
+  focus, insight, loading, onBudgetUpdate, onApprovePlan, onAddTaskFromAI 
 }) => {
   const [showThinking, setShowThinking] = useState(false);
   const [selectedMilestones, setSelectedMilestones] = useState<number[]>([]);
@@ -22,6 +22,7 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
       <div className="space-y-6">
         <div className="h-4 w-24 bg-gray-50 rounded animate-pulse" />
         <div className="h-32 bg-gray-50 rounded animate-pulse" />
+        <div className="h-20 bg-gray-50 rounded animate-pulse" />
       </div>
     );
   }
@@ -78,12 +79,7 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
              >
                Approve Plan & Create Tasks
              </button>
-             <button 
-               onClick={() => alert("Revise functionality: This would trigger the Planner Agent with new constraints.")}
-               className="w-full py-4 bg-white border border-gray-200 text-gray-500 rounded-xl text-[11px] uppercase font-bold tracking-widest hover:bg-gray-50 transition-all"
-             >
-               Revise with Agent
-             </button>
+             <p className="text-[10px] text-center text-gray-400 italic font-serif">Controller Gate: Human authorization required.</p>
           </div>
 
           {/* AI Explanation Sidebar (Integrated in Right Panel) */}
@@ -94,24 +90,32 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
                  {plan.reasoning}
                </p>
              </div>
-             
-             <div>
-               <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Dependencies</h4>
-               <ul className="text-[11px] text-gray-500 space-y-1">
-                 {plan.dependencies.map((d, i) => <li key={i}>• {d}</li>)}
-               </ul>
-             </div>
-
-             <div>
-               <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Assumptions</h4>
-               <ul className="text-[11px] text-gray-500 space-y-1">
-                 {plan.assumptions.map((a, i) => <li key={i}>• {a}</li>)}
-               </ul>
-             </div>
           </div>
         </section>
       ) : (
         <>
+          {/* Controller Gate: Quick Add Tasks from AI Insight */}
+          {insight?.suggestedTasks && insight.suggestedTasks.length > 0 && (
+            <section className="bg-white border border-gray-100 p-6 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+               <div className="flex items-center space-x-2 mb-6">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <h3 className="text-[10px] uppercase tracking-widest text-blue-600 font-bold">Proposed Actions</h3>
+               </div>
+               <div className="space-y-3">
+                  {insight.suggestedTasks.map((t, i) => (
+                    <button 
+                      key={i}
+                      onClick={() => onAddTaskFromAI(t)}
+                      className="w-full text-left p-3 bg-gray-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-xl transition-all group"
+                    >
+                      <span className="text-[13px] text-gray-800 block mb-1 group-hover:text-blue-700 transition-colors">{t}</span>
+                      <span className="text-[9px] uppercase font-bold text-gray-300 group-hover:text-blue-400 tracking-widest">Authorize Item</span>
+                    </button>
+                  ))}
+               </div>
+            </section>
+          )}
+
           {isContact && focus.data && !focus.data.budgetAnalysis && (
             <button 
               onClick={() => onBudgetUpdate(focus.data.id)}

@@ -5,9 +5,10 @@ import { FocusState, PipelineStage } from '../types';
 interface RightPanelDetailsProps {
   focus: FocusState;
   onUpdateLeadStage: (leadId: string, nextStage: PipelineStage) => void;
+  onDelete?: (id: string) => void;
 }
 
-const RightPanelDetails: React.FC<RightPanelDetailsProps> = ({ focus, onUpdateLeadStage }) => {
+const RightPanelDetails: React.FC<RightPanelDetailsProps> = ({ focus, onUpdateLeadStage, onDelete }) => {
   if (!focus.data) return null;
   const isContact = focus.type === 'contact';
 
@@ -43,10 +44,19 @@ const RightPanelDetails: React.FC<RightPanelDetailsProps> = ({ focus, onUpdateLe
         )}
 
         <section>
-          <h3 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4">Description</h3>
+          <h3 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4">Contextual Description</h3>
           <p className="text-[13px] text-gray-600 leading-relaxed font-serif italic">
             {focus.data.bio || focus.data.description || "No expanded context provided."}
           </p>
+        </section>
+
+        <section className="pt-8 border-t border-gray-100">
+          <button 
+            onClick={() => onDelete && onDelete(focus.id!)}
+            className="text-[10px] font-bold uppercase tracking-widest text-red-300 hover:text-red-500 transition-colors"
+          >
+            Archive Asset
+          </button>
         </section>
       </div>
     </div>

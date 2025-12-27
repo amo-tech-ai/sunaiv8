@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ActionItem, FocusState } from '../types';
 
@@ -5,9 +6,17 @@ interface TasksPanelProps {
   tasks: ActionItem[];
   onFocus: (type: 'task', item: ActionItem) => void;
   focus: FocusState;
+  onUpdateTaskStatus: (id: string, status: ActionItem['status']) => void;
+  onDeleteTask: (id: string) => void;
 }
 
-const TaskCard: React.FC<{ task: ActionItem; isActive: boolean; onClick: () => void }> = ({ task, isActive, onClick }) => {
+const TaskCard: React.FC<{ 
+  task: ActionItem; 
+  isActive: boolean; 
+  onClick: () => void;
+  onUpdateStatus: (s: ActionItem['status']) => void;
+  onDelete: () => void;
+}> = ({ task, isActive, onClick, onUpdateStatus, onDelete }) => {
   const priorityColors = {
     'High': 'text-red-600 bg-red-50 border-red-100',
     'Medium': 'text-amber-600 bg-amber-50 border-amber-100',
@@ -17,7 +26,7 @@ const TaskCard: React.FC<{ task: ActionItem; isActive: boolean; onClick: () => v
   return (
     <div 
       onClick={onClick}
-      className={`p-4 rounded-xl border transition-all cursor-pointer mb-3 select-none outline-none group ${
+      className={`p-4 rounded-xl border transition-all cursor-pointer mb-3 select-none outline-none group relative ${
         isActive 
         ? 'bg-white border-black shadow-md ring-1 ring-black/5 scale-[1.02]' 
         : 'bg-white border-gray-100 hover:border-gray-200 shadow-sm'
@@ -27,11 +36,24 @@ const TaskCard: React.FC<{ task: ActionItem; isActive: boolean; onClick: () => v
         <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded border ${priorityColors[task.priority]}`}>
           {task.priority}
         </span>
-        {task.linkedEntityId && (
-          <span className="text-[10px] text-blue-500 font-bold bg-blue-50 px-1.5 py-0.5 rounded flex items-center">
-             <span className="mr-1">🔗</span> Linked
-          </span>
-        )}
+        <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {task.status !== 'Done' && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onUpdateStatus('Done'); }}
+              className="text-[10px] text-emerald-600 font-bold hover:scale-110"
+              title="Mark as Done"
+            >
+              ✓
+            </button>
+          )}
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="text-[10px] text-red-300 font-bold hover:text-red-600"
+            title="Delete Task"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       <h4 className="text-[14px] font-medium text-gray-900 leading-snug mb-2 group-hover:text-black transition-colors">{task.title}</h4>
       <div className="flex justify-between items-end mt-4 pt-3 border-t border-gray-50">
@@ -45,8 +67,7 @@ const TaskCard: React.FC<{ task: ActionItem; isActive: boolean; onClick: () => v
   );
 };
 
-const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onFocus, focus }) => {
-  const [view, setView] = useState<'board' | 'list'>('board');
+const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onFocus, focus, onUpdateTaskStatus, onDeleteTask }) => {
   const statuses: ActionItem['status'][] = ['Backlog', 'In Progress', 'Review', 'Done'];
 
   return (
@@ -54,20 +75,7 @@ const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onFocus, focus }) => {
       <header className="p-12 pb-6 flex justify-between items-end">
         <div>
           <h1 className="font-serif text-3xl mb-4 tracking-tight">Execution Board</h1>
-          <div className="flex space-x-6">
-            <button 
-              onClick={() => setView('board')}
-              className={`text-[12px] uppercase tracking-[0.2em] font-bold pb-1 border-b-2 transition-all ${view === 'board' ? 'text-black border-black' : 'text-gray-300 border-transparent hover:text-gray-500'}`}
-            >
-              Pipeline
-            </button>
-            <button 
-              onClick={() => setView('list')}
-              className={`text-[12px] uppercase tracking-[0.2em] font-bold pb-1 border-b-2 transition-all ${view === 'list' ? 'text-black border-black' : 'text-gray-300 border-transparent hover:text-gray-500'}`}
-            >
-              Table View
-            </button>
-          </div>
+          <p className="text-[14px] text-gray-400">Manage operational outcomes through structured AI workflows.</p>
         </div>
         <button className="bg-black text-white px-6 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-sm">
           New Task
@@ -90,11 +98,10 @@ const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onFocus, focus }) => {
                     task={task} 
                     isActive={focus.id === task.id}
                     onClick={() => onFocus('task', task)}
+                    onUpdateStatus={(s) => onUpdateTaskStatus(task.id, s)}
+                    onDelete={() => onDeleteTask(task.id)}
                   />
                 ))}
-                <button className="w-full py-4 border-2 border-dashed border-gray-100 rounded-xl text-[11px] uppercase tracking-widest font-bold text-gray-300 hover:border-gray-200 hover:text-gray-400 transition-all mt-4">
-                  + Add Item
-                </button>
               </div>
             </div>
           );

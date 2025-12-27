@@ -41,7 +41,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Global Orchestrator State (for UI feedback)
+  // UI State
   const [orchestratorStatus, setOrchestratorStatus] = useState<string>('Idle');
   const [agents, setAgents] = useState<{
     research: 'Running' | 'Idle';
@@ -49,15 +49,6 @@ const App: React.FC = () => {
     automation: 'Running' | 'Idle';
   }>({ research: 'Idle', planning: 'Idle', automation: 'Idle' });
   const [viewingReportId, setViewingReportId] = useState<string | null>(null);
-
-  // Capture Location for Grounding
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      }, () => console.warn("Location permission denied. Grounding fallback to global."));
-    }
-  }, []);
 
   // Persistence Sync
   useEffect(() => localStorage.setItem('sun_contacts', JSON.stringify(contacts)), [contacts]);
@@ -81,24 +72,23 @@ const App: React.FC = () => {
   };
 
   /**
-   * Orchestrator: Deep Research & Planning Handoff
+   * Orchestrator: Multi-Agent Handoff
    */
   const handleDeepResearchLead = async (leadId: string) => {
     const contact = contacts.find(c => c.id === leadId);
     if (!contact) return;
 
-    // Phase 1: Researcher Agent
     setContacts(prev => prev.map(c => c.id === leadId ? { ...c, isResearching: true } : c));
     setAgents(prev => ({ ...prev, research: 'Running' }));
-    setOrchestratorStatus(`Researcher: Grounding market data for ${contact.company}...`);
+    setOrchestratorStatus(`Researcher: Analyzing ${contact.company}...`);
 
     const research = await deepResearchContact(contact);
     if (research) {
       const report = await conductMarketAnalysis(contact, userLocation);
+      const updatedResearch = { ...research, agentReport: report || undefined };
       
       setContacts(prev => prev.map(c => {
         if (c.id === leadId) {
-          const updatedResearch = { ...research, agentReport: report || undefined };
           const updated = { ...c, researchData: updatedResearch, isResearching: false };
           if (focus.id === leadId) setFocus({ ...focus, data: updated });
           return updated;
@@ -106,10 +96,9 @@ const App: React.FC = () => {
         return c;
       }));
 
-      // Phase 2: Planner Agent Handoff
       if (report) {
         setAgents(prev => ({ ...prev, research: 'Idle', planning: 'Running' }));
-        setOrchestratorStatus(`Planner: Synthesizing implementation roadmap for ${contact.company}...`);
+        setOrchestratorStatus(`Planner: Synthesizing roadmap...`);
         const plan = await generateProjectPlan(contact, report);
         setContacts(prev => prev.map(c => {
           if (c.id === leadId) {
@@ -123,20 +112,15 @@ const App: React.FC = () => {
     } else {
       setContacts(prev => prev.map(c => c.id === leadId ? { ...c, isResearching: false, isPlanning: false } : c));
     }
-
     setAgents({ research: 'Idle', planning: 'Idle', automation: 'Idle' });
     setOrchestratorStatus('Idle');
     handleAuditAction('Research & Planning Complete', contact.company);
   };
 
-  /**
-   * Controller Gate: Approve AI Proposed Plan
-   */
   const handleApprovePlan = (leadId: string) => {
     const contact = contacts.find(c => c.id === leadId);
     if (!contact || !contact.proposedPlan) return;
 
-    // Commit proposed milestones to actual tasks
     contact.proposedPlan.milestones.forEach(m => {
       handleAddTask({
         title: `${m.week}: ${m.title}`,
@@ -149,83 +133,16 @@ const App: React.FC = () => {
       });
     });
 
-    // Advance Stage & Archive Proposal
     handleUpdateLeadStage(leadId, 'Proposal');
     setContacts(prev => prev.map(c => c.id === leadId ? { ...c, proposedPlan: undefined } : c));
-    
-    handleAuditAction('Roadmap Approved & Tasks Created', contact.company);
+    handleAuditAction('Roadmap Approved', contact.company);
   };
 
-  const handleUpdateLeadStage = async (leadId: string, nextStage: PipelineStage) => {
+  const handleUpdateLeadStage = (leadId: string, nextStage: PipelineStage) => {
     setContacts(prev => prev.map(c => {
       if (c.id === leadId) {
         const updated = { ...c, pipelineStage: nextStage };
         if (focus.id === leadId) setFocus({ ...focus, data: updated });
-        return updated;
-      }
-      return c;
-    }));
-  };
-
-  const handleBudgetUpdate = async (contactId: string) => {
-    const contact = contacts.find(c => c.id === contactId);
-    if (!contact) return;
-
-    setContacts(prev => prev.map(c => c.id === contactId ? { ...c, isCalculating: true } : c));
-    setAgents(prev => ({ ...prev, automation: 'Running' }));
-    setOrchestratorStatus("Analyst: Running Python budget calculations...");
-
-    const budget = await calculateBudgetProjections(contact);
-    
-    setContacts(prev => prev.map(c => {
-      if (c.id === contactId) {
-        const updated = { ...c, budgetAnalysis: budget || undefined, isCalculating: false };
-        if (focus.id === contactId) setFocus({ ...focus, data: updated });
-        return updated;
-      }
-      return c;
-    }));
-    
-    setAgents(prev => ({ ...prev, automation: 'Idle' }));
-    setOrchestratorStatus('Idle');
-    handleAuditAction('Budget Projection Generated', contact.company);
-  };
-
-  const handleAddContact = (contactData: Partial<Contact>) => {
-    const newContact: Contact = {
-      id: `c-${Date.now()}`,
-      name: contactData.name || 'Unknown Contact',
-      role: 'New Lead',
-      company: contactData.company || 'Unknown Entity',
-      lastContact: 'Just now',
-      status: contactData.status || 'Active',
-      category: contactData.category || 'Designer',
-      pipelineStage: 'Discovery',
-      score: 50,
-      interactions: [],
-      deals: [],
-      placements: [],
-      ...contactData
-    };
-    setContacts(prev => [newContact, ...prev]);
-  };
-
-  const handleLogInteraction = (contactId: string, interaction: Interaction) => {
-    setContacts(prev => prev.map(c => {
-      if (c.id === contactId) {
-        const updated = { ...c, interactions: [interaction, ...c.interactions], lastContact: 'Just now' };
-        if (focus.id === contactId) setFocus({ ...focus, data: updated });
-        return updated;
-      }
-      return c;
-    }));
-  };
-
-  const handleAddDeal = (contactId: string, deal: Deal) => {
-    setContacts(prev => prev.map(c => {
-      if (c.id === contactId) {
-        const updated = { ...c, deals: [deal, ...c.deals], dealValue: deal.value };
-        if (focus.id === contactId) setFocus({ ...focus, data: updated });
         return updated;
       }
       return c;
@@ -241,9 +158,40 @@ const App: React.FC = () => {
       status: taskData.status || 'Backlog',
       linkedEntityId: taskData.linkedEntityId,
       linkedEntityType: taskData.linkedEntityType,
+      dueDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       ...taskData
     };
     setTasks(prev => [newTask, ...prev]);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    if (focus.id === taskId) setFocus({ type: null, id: null, data: null });
+  };
+
+  const handleUpdateTaskStatus = (taskId: string, status: ActionItem['status']) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
+    if (focus.id === taskId) setFocus(prev => ({ ...prev, data: { ...prev.data, status } }));
+  };
+
+  const handleAddProject = (projectData: Partial<Project>) => {
+    const newProject: Project = {
+      id: `p-${Date.now()}`,
+      name: projectData.name || 'Untitled Project',
+      client: projectData.client || 'Unknown Client',
+      type: projectData.type || 'Web',
+      phase: 'Discovery',
+      duration: '8 weeks',
+      status: 'On Track',
+      ...projectData
+    };
+    setProjects(prev => [newProject, ...prev]);
+    handleAuditAction('Project Created', newProject.name);
+  };
+
+  const handleDeleteContact = (id: string) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    setFocus({ type: null, id: null, data: null });
   };
 
   const handleAuditAction = (action: string, context: string) => {
@@ -259,30 +207,27 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeRoute) {
-      case 'Main': return <MainPanel onFocusAction={handleFocusAction} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} />;
-      case 'Projects': return <ProjectsPanel projects={projects} focus={focus} onFocus={handleFocusAction} />;
-      case 'Tasks': return <TasksPanel tasks={tasks} focus={focus} onFocus={handleFocusAction} />;
-      case 'CRM': return <CRMPanel contacts={contacts} focus={focus} onFocus={handleFocusAction} onAddContact={handleAddContact} onLogInteraction={handleLogInteraction} onAddDeal={handleAddDeal} />;
+      case 'Main': return <MainPanel onFocusAction={handleFocusAction} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />;
+      case 'Projects': return <ProjectsPanel projects={projects} focus={focus} onFocus={handleFocusAction} onAddProject={handleAddProject} />;
+      case 'Tasks': return <TasksPanel tasks={tasks} focus={focus} onFocus={handleFocusAction} onUpdateTaskStatus={handleUpdateTaskStatus} onDeleteTask={handleDeleteTask} />;
+      case 'CRM': return <CRMPanel contacts={contacts} focus={focus} onFocus={handleFocusAction} onAddContact={(c) => setContacts([c as Contact, ...contacts])} onLogInteraction={() => {}} onAddDeal={() => {}} />;
       case 'Settings': return <SettingsPanel auditLogs={auditLogs} />;
       case 'AI Wizard': return <WizardPanel onAddLead={(l) => { setContacts([l, ...contacts]); setActiveRoute('CRM'); }} onAddProject={(p) => { setProjects([p, ...projects]); setActiveRoute('Projects'); }} />;
-      case 'Client Dashboard': return <ClientDashboardPanel projects={projects} />;
       default: return <MainPanel onFocusAction={handleFocusAction} focus={focus} />;
     }
   };
-
-  const activeReportContact = viewingReportId ? contacts.find(c => c.id === viewingReportId) : null;
 
   return (
     <div className="flex h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden">
       <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
       <div className="flex-1 flex overflow-hidden relative">
         {renderContent()}
-        {activeReportContact?.researchData?.agentReport && (
+        {viewingReportId && contacts.find(c => c.id === viewingReportId)?.researchData?.agentReport && (
           <MarketReportView 
-            contact={activeReportContact}
-            report={activeReportContact.researchData.agentReport}
+            contact={contacts.find(c => c.id === viewingReportId)!}
+            report={contacts.find(c => c.id === viewingReportId)!.researchData!.agentReport!}
             onClose={() => setViewingReportId(null)}
-            onExport={() => handleAuditAction('Intelligence Report Exported', activeReportContact.company)}
+            onGenerateTasks={(titles) => titles.forEach(t => handleAddTask({ title: t, project: 'AI Strategy', priority: 'Medium' }))}
           />
         )}
       </div>
@@ -299,9 +244,10 @@ const App: React.FC = () => {
         onVisualUpdate={() => {}}
         onResearchUpdate={() => handleDeepResearchLead(focus.id!)}
         onMarketReportUpdate={() => {}}
-        onBudgetUpdate={handleBudgetUpdate}
+        onBudgetUpdate={() => {}}
         onApprovePlan={() => handleApprovePlan(focus.id!)}
         onOpenMarketReport={(id) => setViewingReportId(id)}
+        onDeleteEntity={(id) => focus.type === 'contact' ? handleDeleteContact(id) : focus.type === 'task' ? handleDeleteTask(id) : null}
       />
       <ContextStrip focus={focus} />
       <AssistantChatbot workspace={{ contacts, projects }} />

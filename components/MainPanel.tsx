@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ActionItem, Contact, FocusState, Collaborator } from '../types';
+import { ActionItem, Contact, FocusState, Collaborator, AuditLog } from '../types';
 import { NEXT_ACTIONS, RECENT_ACTIVITY, STATS, MOCK_CONTACTS } from '../constants';
 
 interface MainPanelProps {
@@ -12,6 +12,7 @@ interface MainPanelProps {
     planning: 'Running' | 'Idle';
     automation: 'Running' | 'Idle';
   };
+  auditLogs?: AuditLog[];
 }
 
 const AvatarStack: React.FC<{ users?: Collaborator[] }> = ({ users }) => {
@@ -64,67 +65,22 @@ const ActionRow: React.FC<{
   </div>
 );
 
-const ContactRow: React.FC<{ 
-  contact: Contact; 
-  isActive: boolean; 
-  onClick: () => void 
-}> = ({ contact, isActive, onClick }) => (
-  <div 
-    onClick={onClick}
-    className={`flex items-center justify-between py-3 px-6 border border-transparent rounded-lg cursor-pointer transition-all duration-200 ${
-      isActive ? 'bg-white border-gray-200 shadow-sm ring-1 ring-gray-100' : 'hover:bg-gray-50/50'
-    }`}
-  >
-    <div className="flex items-center space-x-4">
-      <div className="relative">
-        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500 overflow-hidden">
-          {contact.name.split(' ').map(n => n[0]).join('')}
-        </div>
-        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${contact.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-      </div>
-      <div>
-        <h4 className="text-[14px] font-medium text-gray-900 leading-none mb-1">{contact.name}</h4>
-        <div className="flex items-center space-x-2">
-          <p className="text-[12px] text-gray-400">{contact.role}</p>
-          {(contact.isResearching || contact.isPlanning) && (
-            <span className="text-[9px] text-blue-500 font-bold uppercase tracking-tighter animate-pulse">
-              {contact.isResearching ? 'Researching...' : 'Planning...'}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-    <div className="flex items-center space-x-3">
-      {contact.researchData && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />}
-    </div>
-  </div>
-);
-
-const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestratorStatus, agents }) => {
-  const enrichmentNeeded = MOCK_CONTACTS.filter(c => (c.completeness || 0) < 70);
-
+const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestratorStatus, agents, auditLogs }) => {
   return (
     <main className="flex-1 h-screen overflow-y-auto bg-[#fafafa] p-12 pb-32 scroll-smooth">
-      {/* Agent Status Ticker */}
       <div className="mb-10 flex items-center space-x-12 border-b border-gray-100 pb-6 overflow-x-auto no-scrollbar">
         <div className="flex items-center space-x-3 flex-shrink-0">
-          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-300">Agents running:</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-300">Agents:</span>
         </div>
         
         <div className="flex items-center space-x-2 flex-shrink-0">
           <div className={`w-1.5 h-1.5 rounded-full ${agents?.research === 'Running' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-200'}`} />
           <span className={`text-[11px] font-bold ${agents?.research === 'Running' ? 'text-black' : 'text-gray-300'}`}>Research</span>
-          {agents?.research === 'Running' && <span className="text-[9px] text-emerald-500 font-medium italic">Analyzing market data</span>}
         </div>
 
         <div className="flex items-center space-x-2 flex-shrink-0">
           <div className={`w-1.5 h-1.5 rounded-full ${agents?.planning === 'Running' ? 'bg-blue-500 animate-pulse' : 'bg-gray-200'}`} />
           <span className={`text-[11px] font-bold ${agents?.planning === 'Running' ? 'text-black' : 'text-gray-300'}`}>Planning</span>
-        </div>
-
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          <div className={`w-1.5 h-1.5 rounded-full bg-gray-200`} />
-          <span className={`text-[11px] font-bold text-gray-200`}>Automation</span>
         </div>
         
         {orchestratorStatus && orchestratorStatus !== 'Idle' && (
@@ -135,10 +91,7 @@ const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestrato
       </div>
 
       <header className="mb-12">
-        <div className="flex justify-between items-start mb-8">
-           <h1 className="font-serif text-3xl tracking-tight">Dashboard</h1>
-        </div>
-        
+        <h1 className="font-serif text-3xl tracking-tight mb-8">Dashboard</h1>
         <div className="flex space-x-3">
           <StatPill label="Active Projects" value={STATS.activeProjects} />
           <StatPill label="Open Tasks" value={STATS.openTasks} />
@@ -149,7 +102,7 @@ const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestrato
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">
           <section className="mb-16">
-            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Next Actions</h2>
+            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Immediate Priorities</h2>
             <div className="space-y-1">
               {NEXT_ACTIONS.map((item) => (
                 <ActionRow 
@@ -162,60 +115,47 @@ const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestrato
             </div>
           </section>
 
-          {enrichmentNeeded.length > 0 && (
-            <section className="mb-16">
-              <h2 className="text-[11px] uppercase tracking-[0.2em] text-blue-500 font-bold mb-6">Strategic Opportunities (AI)</h2>
-              <div className="bg-blue-50/30 border border-blue-100 rounded-2xl p-6">
-                <p className="text-[13px] text-blue-700 font-serif italic mb-4">
-                  Intelligence Agent has identified {enrichmentNeeded.length} leads with shallow context. 
-                  Enriching these will unlock higher accuracy intent scoring.
-                </p>
-                <div className="space-y-3">
-                  {enrichmentNeeded.slice(0, 2).map(c => (
-                    <div key={c.id} className="flex justify-between items-center bg-white p-3 px-4 rounded-xl border border-blue-100 shadow-sm">
-                      <span className="text-[13px] font-medium">{c.company}</span>
-                      <button 
-                        onClick={() => onFocusAction('contact', c)}
-                        className="text-[10px] uppercase font-bold text-blue-500 tracking-widest border-b border-blue-200 pb-0.5"
-                      >
-                        Enrich Profile
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
           <section>
-            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Recent Activity</h2>
-            <div className="max-w-2xl">
-              <ul className="space-y-8">
-                {RECENT_ACTIVITY.map((activity) => (
-                  <li key={activity.id} className="flex items-start justify-between relative pl-6 before:content-[''] before:absolute before:left-0 before:top-1.5 before:w-1.5 before:h-1.5 before:rounded-full before:bg-gray-200">
-                    <div>
-                      <p className="text-[14px] text-gray-800 font-medium leading-none mb-1.5 tracking-tight">{activity.title}</p>
-                      <p className="text-[12px] text-gray-400 font-serif italic">{activity.project}</p>
+            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Recent Intelligence Approval Feed</h2>
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+              {auditLogs && auditLogs.length > 0 ? (
+                auditLogs.map(log => (
+                  <div key={log.id} className="p-4 border-b border-gray-50 last:border-0 flex justify-between items-center group">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-[12px] font-bold">✓</div>
+                      <div>
+                        <p className="text-[13px] font-medium text-gray-900">{log.action}</p>
+                        <p className="text-[11px] text-gray-400 font-serif italic">{log.context}</p>
+                      </div>
                     </div>
-                    <span className="text-[11px] text-gray-400 tabular-nums">{activity.time}</span>
-                  </li>
-                ))}
-              </ul>
+                    <span className="text-[10px] text-gray-300 font-mono">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="p-12 text-center text-[13px] text-gray-400 font-serif italic">Human-in-the-loop approvals will appear here.</p>
+              )}
             </div>
           </section>
         </div>
 
         <div>
           <section>
-            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Key Contacts</h2>
-            <div className="space-y-1">
-              {MOCK_CONTACTS.map((contact) => (
-                <ContactRow 
+            <h2 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">CRM Snapshot</h2>
+            <div className="space-y-3">
+              {MOCK_CONTACTS.slice(0, 5).map((contact) => (
+                <div 
                   key={contact.id}
-                  contact={contact}
-                  isActive={focus.id === contact.id}
                   onClick={() => onFocusAction('contact', contact)}
-                />
+                  className={`flex items-center space-x-4 p-3 rounded-xl cursor-pointer transition-all ${focus.id === contact.id ? 'bg-white border border-gray-100 shadow-sm' : 'hover:bg-gray-50'}`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                    {contact.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-medium text-gray-900">{contact.company}</h4>
+                    <p className="text-[11px] text-gray-400">{contact.role}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </section>

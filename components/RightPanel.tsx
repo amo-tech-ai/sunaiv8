@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { FocusState, AIInsight, Contact, ActionItem, PipelineStage, EnrichmentSuggestion, ResearchResult, MarketReport } from '../types';
-import { getAIInsight, generateCreativeConcept, deepResearchContact, conductMarketAnalysis } from '../services/geminiService';
+import { getAIInsight, generateCreativeConcept } from '../services/geminiService';
 
 import RightPanelDetails from './RightPanelDetails';
 import RightPanelIntelligence from './RightPanelIntelligence';
@@ -24,16 +24,16 @@ interface RightPanelProps {
   onBudgetUpdate: (leadId: string) => void;
   onApprovePlan: (leadId: string) => void;
   onOpenMarketReport: (leadId: string) => void;
+  onDeleteEntity: (id: string) => void;
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ 
-  focus, history, onUpdateLeadStage, onAuditAction, onAddTask, onVisualUpdate, onResearchUpdate, onMarketReportUpdate, onBudgetUpdate, onApprovePlan, onOpenMarketReport
+  focus, history, onUpdateLeadStage, onAuditAction, onAddTask, onVisualUpdate, onResearchUpdate, onMarketReportUpdate, onBudgetUpdate, onApprovePlan, onOpenMarketReport, onDeleteEntity
 }) => {
   const [insight, setInsight] = useState<AIInsight | null>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'details' | 'intelligence' | 'research' | 'creative'>('details');
   const [generatingVisual, setGeneratingVisual] = useState(false);
-  const [isResearching, setIsResearching] = useState(false);
 
   useEffect(() => {
     if (focus.type && focus.data) {
@@ -63,6 +63,20 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const handleDeepResearch = async () => {
     if (focus.type === 'contact' && focus.data) {
       onResearchUpdate(focus.data.id, null as any); 
+    }
+  };
+
+  const handleAddTaskFromAI = (title: string) => {
+    if (focus.data) {
+      onAddTask({
+        title,
+        project: focus.data.company || 'AI Proposal',
+        priority: 'Medium',
+        status: 'Backlog',
+        linkedEntityId: focus.data.id,
+        linkedEntityType: focus.type === 'contact' ? 'contact' : 'project'
+      });
+      onAuditAction('Task Authorized from AI Suggestion', focus.data.company || focus.data.name);
     }
   };
 
@@ -97,6 +111,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
           <RightPanelDetails 
             focus={focus} 
             onUpdateLeadStage={onUpdateLeadStage} 
+            onDelete={onDeleteEntity}
           />
         )}
 
@@ -105,9 +120,9 @@ const RightPanel: React.FC<RightPanelProps> = ({
             focus={focus}
             insight={insight}
             loading={loading}
-            // Fix: Removed 'proposedPlan' as it is not present in RightPanelIntelligenceProps interface
             onBudgetUpdate={onBudgetUpdate}
             onApprovePlan={() => onApprovePlan(focus.data.id)}
+            onAddTaskFromAI={handleAddTaskFromAI}
           />
         )}
 
