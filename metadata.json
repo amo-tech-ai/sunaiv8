@@ -1,0 +1,7 @@
+{
+  "name": "Sun AI Agency Dashboard",
+  "description": "An AI-assisted operations platform for agencies to manage projects, tasks, CRM, and marketing in a calm, editorial workspace with a 3-panel layout.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
