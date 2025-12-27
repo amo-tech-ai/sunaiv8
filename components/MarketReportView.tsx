@@ -8,9 +8,10 @@ interface MarketReportViewProps {
   onClose: () => void;
   onExport?: () => void;
   onGenerateTasks?: (taskTitles: string[]) => void;
+  onMarketReportUpdate?: () => void;
 }
 
-const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, onClose, onExport, onGenerateTasks }) => {
+const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, onClose, onExport, onGenerateTasks, onMarketReportUpdate }) => {
   
   const handleGenerateRoadmap = () => {
     if (onGenerateTasks && report.suggestedAutomations) {
@@ -33,6 +34,12 @@ const MarketReportView: React.FC<MarketReportViewProps> = ({ contact, report, on
             <span className="text-[10px] uppercase font-bold text-gray-300 block">Lead Context</span>
             <span className="text-[14px] font-medium">{contact.company} · {contact.category}</span>
           </div>
+          <button 
+            onClick={onMarketReportUpdate}
+            className="text-[12px] font-bold uppercase tracking-widest border border-gray-200 px-6 py-2.5 rounded hover:bg-gray-50 transition-all shadow-sm flex items-center space-x-2"
+          >
+            <span>🔄 Refresh</span>
+          </button>
           <button 
             onClick={onExport}
             className="text-[12px] font-bold uppercase tracking-widest border border-gray-200 px-6 py-2.5 rounded hover:bg-gray-50 transition-all shadow-sm"

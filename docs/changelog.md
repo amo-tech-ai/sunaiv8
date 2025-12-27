@@ -1,6 +1,14 @@
 
 # Changelog — Sun AI Agency
 
+## [v1.1.0] — 2024-05-22
+### Added
+- **Core Handler Implementation (CRIT-001)**: 
+    - Full implementation of `onApplyEnrichment`, `onTriggerEnrichment`, `onApproveDraft`, `onVisualUpdate`, `onMarketReportUpdate`, and `onBudgetUpdate`.
+- **Integrated Notification System**: Global toast system for real-time agent feedback.
+- **Async UI States**: Visual indicators for background research, planning, and ROI calculation agents.
+- **Enhanced Documenting**: Created `10-progress-tracker.md` for production verification.
+
 ## [v1.0.0] — 2024-05-21
 ### Added
 - **Production Persistence**: Full localStorage sync for CRM, Projects, and Tasks.

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Contact, FocusState, PipelineStage, ContactCategory, ContactStatus, Interaction, Deal } from '../types';
 import { STATS } from '../constants';
@@ -66,11 +67,13 @@ const PipelineCard: React.FC<{ contact: Contact; isActive: boolean; onClick: () 
 
 const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddContact, onLogInteraction, onAddDeal }) => {
   const [view, setView] = useState<'board' | 'detail'>('board');
-  const [activeContact, setActiveContact] = useState<Contact | null>(null);
+  const [activeContactId, setActiveContactId] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ category: ContactCategory | 'All'; status: ContactStatus | 'All' }>({ category: 'All', status: 'All' });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+
+  const activeContact = useMemo(() => contacts.find(c => c.id === activeContactId), [contacts, activeContactId]);
 
   // Form states
   const [newContact, setNewContact] = useState<Partial<Contact>>({ name: '', company: '', category: 'Designer', status: 'Active' });
@@ -88,7 +91,7 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
   }, [contacts, filters]);
 
   const handleOpenContact = (contact: Contact) => {
-    setActiveContact(contact);
+    setActiveContactId(contact.id);
     setView('detail');
     onFocus('contact', contact);
   };
@@ -100,16 +103,16 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
   };
 
   const submitLogInteraction = () => {
-    if (activeContact) {
-      onLogInteraction(activeContact.id, { ...newLog, id: Date.now().toString() } as Interaction);
+    if (activeContactId) {
+      onLogInteraction(activeContactId, { ...newLog, id: Date.now().toString() } as Interaction);
       setIsLogModalOpen(false);
       setNewLog({ type: 'Meeting', note: '', date: new Date().toISOString().split('T')[0] });
     }
   };
 
   const submitAddDeal = () => {
-    if (activeContact && newDeal.title) {
-      onAddDeal(activeContact.id, { ...newDeal, id: Date.now().toString() } as Deal);
+    if (activeContactId && newDeal.title) {
+      onAddDeal(activeContactId, { ...newDeal, id: Date.now().toString() } as Deal);
       setIsDealModalOpen(false);
       setNewDeal({ title: '', value: '', stage: 'Discovery', closeDate: '' });
     }
@@ -117,7 +120,6 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
 
   return (
     <div className="flex-1 h-screen overflow-hidden flex flex-col bg-[#fafafa]">
-      {/* Header */}
       <header className="p-12 pb-6 flex justify-between items-end">
         <div>
           <h1 className="font-serif text-3xl mb-4 tracking-tight">
@@ -125,7 +127,7 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
           </h1>
           <div className="flex space-x-6">
             <button 
-              onClick={() => { setView('board'); setActiveContact(null); }}
+              onClick={() => { setView('board'); setActiveContactId(null); }}
               className={`text-[12px] uppercase tracking-[0.2em] font-bold pb-1 border-b-2 transition-all ${view === 'board' ? 'text-black border-black' : 'text-gray-300 border-transparent hover:text-gray-500'}`}
             >
               Pipeline Board
@@ -151,7 +153,6 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
         </div>
       </header>
 
-      {/* Board View */}
       {view === 'board' ? (
         <>
           <div className="px-12 mb-8 flex space-x-4">
@@ -269,7 +270,7 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
         </div>
       ) : null}
 
-      {/* Add Contact Modal */}
+      {/* Modals */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-8">
            <div className="bg-white rounded-3xl w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
@@ -316,7 +317,6 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
         </div>
       )}
 
-      {/* Add Deal Modal */}
       {isDealModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-8">
            <div className="bg-white rounded-3xl w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
@@ -362,7 +362,6 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
         </div>
       )}
 
-      {/* Log Interaction Modal */}
       {isLogModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-8">
            <div className="bg-white rounded-3xl w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
