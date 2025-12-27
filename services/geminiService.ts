@@ -4,18 +4,22 @@ import { Contact, AIInsight, FocusType, MarketReport, ResearchResult, PipelineSt
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * Hyper-local Intelligence Agent
+ * Utilizes Gemini 2.5 Flash for Maps grounding to identify industry hubs.
+ */
 export const getLocalIntelligence = async (company: string, category: string, location?: { lat: number; lng: number }): Promise<string> => {
   const ai = getAI();
   const prompt = `Find the local office locations and nearby high-end industry hubs for ${company} in the ${category} sector. 
   Current user context: ${location ? `Latitude ${location.lat}, Longitude ${location.lng}` : 'Global'}.
-  Check for nearby luxury venues or competitors that might influence an agency partnership. Provide an editorial summary.`;
+  Check for nearby luxury venues, showrooms, or competitors. Provide a concise editorial summary.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite-latest", 
+      model: "gemini-2.5-flash-preview-tts", // Optimal for general grounded text tasks
       contents: prompt,
       config: {
-        tools: [{ googleMaps: {} }, { googleSearch: {} }],
+        tools: [{ googleMaps: {} }],
         toolConfig: {
           retrievalConfig: {
             latLng: location ? { latitude: location.lat, longitude: location.lng } : undefined
@@ -23,21 +27,24 @@ export const getLocalIntelligence = async (company: string, category: string, lo
         }
       },
     });
-    return response.text || "No localized physical intelligence available.";
+    return response.text || "No localized physical intelligence available for this region.";
   } catch (error) {
     console.error("Local Intelligence Failed:", error);
     return "Localized intelligence agent offline.";
   }
 };
 
+/**
+ * Researcher Agent: Market Analysis
+ * Utilizes Gemini 3 Pro with Search grounding for competitive analysis.
+ */
 export const conductMarketAnalysis = async (contact: Contact, location?: { lat: number; lng: number }): Promise<MarketReport | null> => {
   const ai = getAI();
-  const prompt = `Conduct a comprehensive competitive and market analysis for ${contact.company} in the ${contact.category} sector.
-  Target Market Context: ${location ? 'User location prioritized' : 'Global'}.
+  const prompt = `Conduct a comprehensive competitive and market analysis for ${contact.company} (${contact.name}, ${contact.role}) in the ${contact.category} sector.
   1. Identify top 3 direct competitors and their URLs.
-  2. List their current digital marketing tactics.
-  3. Identify specific operational pain points in their industry.
-  4. Suggest 3 specific AI Agent workflows.`;
+  2. List their current digital marketing tactics and operational weaknesses.
+  3. Identify specific industry pain points for ${contact.company}.
+  4. Suggest 3 specific AI Agent workflows to solve these points.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -70,7 +77,7 @@ export const conductMarketAnalysis = async (contact: Contact, location?: { lat: 
                 properties: {
                   workflow: { type: Type.STRING },
                   benefit: { type: Type.STRING },
-                  complexity: { type: Type.STRING }
+                  complexity: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] }
                 },
                 required: ["workflow", "benefit", "complexity"]
               }
@@ -92,11 +99,13 @@ export const conductMarketAnalysis = async (contact: Contact, location?: { lat: 
   }
 };
 
+/**
+ * Planner Agent: Strategic Roadmap
+ */
 export const generateProjectPlan = async (contact: Contact, report: MarketReport): Promise<ProjectPlan | null> => {
   const ai = getAI();
-  const prompt = `Planner Agent: Create a structured 4-week implementation roadmap for ${contact.company} based on their pain points: ${report.painPoints.join(', ')}. 
-  Weekly milestones must be strategic and agency-led. 
-  Include your reasoning for the plan, any assumptions, and external dependencies.`;
+  const prompt = `Strategic Planner: Create a 4-week implementation roadmap for ${contact.company} based on these pain points: ${report.painPoints.join(', ')}. 
+  Roadmap must be realistic, agency-led, and high-impact.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -135,14 +144,16 @@ export const generateProjectPlan = async (contact: Contact, report: MarketReport
   }
 };
 
+/**
+ * Analyst Agent: ROI Math (Code Execution)
+ */
 export const calculateBudgetProjections = async (contact: Contact): Promise<BudgetAnalysis | null> => {
   const ai = getAI();
-  const prompt = `Calculate 12-month ROI for ${contact.company}. 
-  Current Deal Value: ${contact.dealValue || '$50k'}.
-  1. Base Fee: $15k Setup.
-  2. Retainer: $8k/mo.
-  3. ROI: Assume 3.5x efficiency multiplier from AI automation.
-  Use Python for calculation.`;
+  const prompt = `Analyst Agent: Use Python to calculate the 12-month ROI for ${contact.company}.
+  Input Variable: Deal Value = ${contact.dealValue || '$50,000'}.
+  Fixed Costs: Setup=$15k, Monthly Retainer=$8k.
+  Efficiency Gain: AI reduces op-ex by 40% annually.
+  Provide a JSON breakdown of total cost, roi percentage, and reasoning.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -178,9 +189,13 @@ export const calculateBudgetProjections = async (contact: Contact): Promise<Budg
   }
 };
 
+/**
+ * Strategic Insight Agent (Thinking Config)
+ */
 export const getAIInsight = async (type: FocusType, data: any): Promise<AIInsight> => {
   const ai = getAI();
-  const prompt = `Strategic Audit: Focused ${type} "${data.name || data.company || 'Unknown'}". Analyze risks and provide 3 tactical signals.`;
+  const prompt = `Senior Strategist: Analyze the focused ${type} "${data.name || data.company || 'Unknown'}". 
+  What is the hidden risk? What is the single best next action? Provide reasoning trace.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -197,16 +212,7 @@ export const getAIInsight = async (type: FocusType, data: any): Promise<AIInsigh
             confidence: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
             signals: { type: Type.ARRAY, items: { type: Type.STRING } },
             suggestedTasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-            reasoningTrace: { type: Type.STRING },
-            forecast: {
-              type: Type.OBJECT,
-              properties: {
-                probability: { type: Type.NUMBER },
-                reasoning: { type: Type.STRING },
-                nextBestAction: { type: Type.STRING }
-              },
-              required: ["probability", "reasoning", "nextBestAction"]
-            }
+            reasoningTrace: { type: Type.STRING }
           },
           required: ["summary", "suggestion", "confidence", "signals", "suggestedTasks", "reasoningTrace"],
         },
@@ -215,11 +221,11 @@ export const getAIInsight = async (type: FocusType, data: any): Promise<AIInsigh
     return JSON.parse(response.text.trim()) as AIInsight;
   } catch (error) {
     return {
-      summary: "Stable baseline.",
-      suggestion: "Maintain standard observation.",
+      summary: "Observation baseline active.",
+      suggestion: "Maintain standard process.",
       confidence: "medium",
-      signals: ["No anomalies detected"],
-      suggestedTasks: ["Routine sync"],
+      signals: ["No anomalies detected in current focus window."],
+      suggestedTasks: ["Routine followup"],
       reasoningTrace: "Heuristic scan complete."
     };
   }
@@ -227,16 +233,14 @@ export const getAIInsight = async (type: FocusType, data: any): Promise<AIInsigh
 
 export const generateCreativeConcept = async (contact: Contact): Promise<string | null> => {
   const ai = getAI();
-  const prompt = `Minimalist luxury concept for ${contact.company}. Editorial tones. High fashion aesthetic.`;
+  const prompt = `A minimalist high-fashion mood board for ${contact.company}. Editorial aesthetic. Muted tones. 4k resolution.`;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: { parts: [{ text: prompt }] },
     });
-    for (const cand of response.candidates) {
-      for (const part of cand.content.parts) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-      }
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
     }
     return null;
   } catch (error) {
@@ -244,9 +248,74 @@ export const generateCreativeConcept = async (contact: Contact): Promise<string 
   }
 };
 
+export const getChatResponse = async (query: string, workspace: any): Promise<string> => {
+  const ai = getAI();
+  const prompt = `Workspace Context: ${JSON.stringify(workspace)}\nUser Question: ${query}`;
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are the Sun AI Agency Principal Assistant. Answer questions based on the workspace context. Be concise, editorial, and helpful."
+      }
+    });
+    return response.text || "I'm sorry, I couldn't find a grounded answer for that in the current workspace.";
+  } catch (error) {
+    return "Workspace connection interrupted.";
+  }
+};
+
+export const generateWorkflowDraft = async (contact: Contact, stage: PipelineStage): Promise<WorkflowDraft> => {
+  const ai = getAI();
+  const prompt = `Draft a high-end ${stage} document for ${contact.company} (${contact.name}). 
+  Focus on luxury market positioning and AI efficiency gains.`;
+  
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config: { 
+      systemInstruction: "You are a senior agency business development director specializing in the fashion luxury sector." 
+    }
+  });
+  
+  return {
+    type: stage === 'Proposal' ? 'Proposal' : 'Brief',
+    content: response.text || "Drafting error. Please retry.",
+    status: 'Pending',
+    timestamp: new Date().toISOString()
+  };
+};
+
+export const enrichLeadData = async (query: string, contactName?: string): Promise<EnrichmentSuggestion | null> => {
+  const ai = getAI();
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Research and enrich the profile for ${query} (${contactName || 'Lead'}).`,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            industry: { type: Type.STRING },
+            companyDescription: { type: Type.STRING },
+            keyFocus: { type: Type.STRING },
+            suggestedValue: { type: Type.STRING },
+            contactPosition: { type: Type.STRING }
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text.trim()) as EnrichmentSuggestion;
+  } catch (error) {
+    return null;
+  }
+};
+
 export const deepResearchContact = async (contact: Contact): Promise<ResearchResult | null> => {
   const ai = getAI();
-  const prompt = `Deep-dive research for ${contact.company}. Identify latest market moves, executive shifts, and public PR sentiment.`;
+  const prompt = `Deep Research: ${contact.company}. Latest news, market shifts, and public PR sentiment.`;
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -274,65 +343,6 @@ export const deepResearchContact = async (contact: Contact): Promise<ResearchRes
       }
     });
     return JSON.parse(response.text.trim()) as ResearchResult;
-  } catch (error) {
-    return null;
-  }
-};
-
-export const getChatResponse = async (query: string, workspace: any): Promise<string> => {
-  const ai = getAI();
-  const prompt = `Workspace Context: ${JSON.stringify(workspace)}\nUser: ${query}`;
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: "You are the Sun AI Agency Assistant. Use provided workspace context to answer concisely."
-      }
-    });
-    return response.text || "I'm sorry, I couldn't find relevant data.";
-  } catch (error) {
-    return "Connection error.";
-  }
-};
-
-export const generateWorkflowDraft = async (contact: Contact, stage: PipelineStage): Promise<WorkflowDraft> => {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Draft a professional ${stage} for ${contact.company}.`,
-    config: { systemInstruction: "You are a senior agency business development director." }
-  });
-  return {
-    type: 'Proposal',
-    content: response.text || "",
-    status: 'Pending',
-    timestamp: new Date().toISOString()
-  };
-};
-
-export const enrichLeadData = async (query: string, contactName?: string): Promise<EnrichmentSuggestion | null> => {
-  const ai = getAI();
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Enrich profile for ${query} (${contactName || 'Lead'}).`,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            industry: { type: Type.STRING },
-            companyDescription: { type: Type.STRING },
-            keyFocus: { type: Type.STRING },
-            suggestedValue: { type: Type.STRING },
-            contactPosition: { type: Type.STRING }
-          }
-        }
-      }
-    });
-    return JSON.parse(response.text.trim()) as EnrichmentSuggestion;
   } catch (error) {
     return null;
   }

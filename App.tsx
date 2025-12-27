@@ -41,7 +41,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Orchestrator State
+  // Global Orchestrator State (for UI feedback)
   const [orchestratorStatus, setOrchestratorStatus] = useState<string>('Idle');
   const [agents, setAgents] = useState<{
     research: 'Running' | 'Idle';
@@ -80,13 +80,17 @@ const App: React.FC = () => {
     }
   };
 
+  /**
+   * Orchestrator: Deep Research & Planning Handoff
+   */
   const handleDeepResearchLead = async (leadId: string) => {
     const contact = contacts.find(c => c.id === leadId);
     if (!contact) return;
 
+    // Phase 1: Researcher Agent
     setContacts(prev => prev.map(c => c.id === leadId ? { ...c, isResearching: true } : c));
     setAgents(prev => ({ ...prev, research: 'Running' }));
-    setOrchestratorStatus(`Researcher: Grounding data for ${contact.company}...`);
+    setOrchestratorStatus(`Researcher: Grounding market data for ${contact.company}...`);
 
     const research = await deepResearchContact(contact);
     if (research) {
@@ -102,10 +106,10 @@ const App: React.FC = () => {
         return c;
       }));
 
-      // AUTO-HANDOFF TO PLANNER
+      // Phase 2: Planner Agent Handoff
       if (report) {
         setAgents(prev => ({ ...prev, research: 'Idle', planning: 'Running' }));
-        setOrchestratorStatus("Planner: Drafting 4-week implementation roadmap...");
+        setOrchestratorStatus(`Planner: Synthesizing implementation roadmap for ${contact.company}...`);
         const plan = await generateProjectPlan(contact, report);
         setContacts(prev => prev.map(c => {
           if (c.id === leadId) {
@@ -125,11 +129,14 @@ const App: React.FC = () => {
     handleAuditAction('Research & Planning Complete', contact.company);
   };
 
+  /**
+   * Controller Gate: Approve AI Proposed Plan
+   */
   const handleApprovePlan = (leadId: string) => {
     const contact = contacts.find(c => c.id === leadId);
     if (!contact || !contact.proposedPlan) return;
 
-    // Transactional Commit
+    // Commit proposed milestones to actual tasks
     contact.proposedPlan.milestones.forEach(m => {
       handleAddTask({
         title: `${m.week}: ${m.title}`,
@@ -142,12 +149,11 @@ const App: React.FC = () => {
       });
     });
 
-    // Advance Stage & Clear Proposal
+    // Advance Stage & Archive Proposal
     handleUpdateLeadStage(leadId, 'Proposal');
     setContacts(prev => prev.map(c => c.id === leadId ? { ...c, proposedPlan: undefined } : c));
     
     handleAuditAction('Roadmap Approved & Tasks Created', contact.company);
-    alert(`4-week strategy committed for ${contact.company}. Tasks added to Execution Board.`);
   };
 
   const handleUpdateLeadStage = async (leadId: string, nextStage: PipelineStage) => {
@@ -167,7 +173,7 @@ const App: React.FC = () => {
 
     setContacts(prev => prev.map(c => c.id === contactId ? { ...c, isCalculating: true } : c));
     setAgents(prev => ({ ...prev, automation: 'Running' }));
-    setOrchestratorStatus("Analyst: Executing Python logic for budget projections...");
+    setOrchestratorStatus("Analyst: Running Python budget calculations...");
 
     const budget = await calculateBudgetProjections(contact);
     
@@ -182,7 +188,7 @@ const App: React.FC = () => {
     
     setAgents(prev => ({ ...prev, automation: 'Idle' }));
     setOrchestratorStatus('Idle');
-    handleAuditAction('Budget Projection Generated (Code Exec)', contact.company);
+    handleAuditAction('Budget Projection Generated', contact.company);
   };
 
   const handleAddContact = (contactData: Partial<Contact>) => {
