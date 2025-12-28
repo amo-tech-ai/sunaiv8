@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { FocusState, AIInsight, ProjectPlan } from '../types';
+import { speakInsight } from '../services/ai/speechAgent';
 
 interface RightPanelIntelligenceProps {
   focus: FocusState;
@@ -16,6 +16,7 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
 }) => {
   const [showThinking, setShowThinking] = useState(false);
   const [selectedMilestones, setSelectedMilestones] = useState<number[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   if (loading) {
     return (
@@ -34,6 +35,13 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
     setSelectedMilestones(prev => 
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
+  };
+
+  const handleListen = async () => {
+    if (!insight?.summary) return;
+    setIsSpeaking(true);
+    await speakInsight(insight.summary);
+    setIsSpeaking(false);
   };
 
   return (
@@ -82,7 +90,6 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
              <p className="text-[10px] text-center text-gray-400 italic font-serif">Controller Gate: Human authorization required.</p>
           </div>
 
-          {/* AI Explanation Sidebar (Integrated in Right Panel) */}
           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-6">
              <div>
                <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-3">Why this plan</h4>
@@ -94,7 +101,19 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
         </section>
       ) : (
         <>
-          {/* Controller Gate: Quick Add Tasks from AI Insight */}
+          <div className="flex justify-between items-center mb-4">
+             <h3 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Strategic Insight</h3>
+             <button 
+                onClick={handleListen}
+                disabled={isSpeaking || !insight}
+                className={`text-[10px] font-bold uppercase tracking-widest transition-all ${isSpeaking ? 'text-emerald-500 animate-pulse' : 'text-blue-500 hover:text-blue-700'}`}
+             >
+               {isSpeaking ? 'Reading Brief...' : 'Listen to Brief'}
+             </button>
+          </div>
+          
+          <p className="text-[14px] leading-relaxed text-gray-600 font-serif italic mb-10">{insight?.summary}</p>
+
           {insight?.suggestedTasks && insight.suggestedTasks.length > 0 && (
             <section className="bg-white border border-gray-100 p-6 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
                <div className="flex items-center space-x-2 mb-6">
@@ -164,11 +183,6 @@ const RightPanelIntelligence: React.FC<RightPanelIntelligenceProps> = ({
               </div>
             </section>
           )}
-
-          <section>
-            <h3 className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4">Strategic Insight</h3>
-            <p className="text-[14px] leading-relaxed text-gray-600 font-serif italic">{insight?.summary}</p>
-          </section>
         </>
       )}
     </div>
