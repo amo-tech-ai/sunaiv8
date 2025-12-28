@@ -68,6 +68,7 @@ const PipelineCard: React.FC<{ contact: Contact; isActive: boolean; onClick: () 
 const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddContact, onLogInteraction, onAddDeal }) => {
   const [view, setView] = useState<'board' | 'detail'>('board');
   const [activeContactId, setActiveContactId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<{ category: ContactCategory | 'All'; status: ContactStatus | 'All' }>({ category: 'All', status: 'All' });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -86,9 +87,16 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
     return contacts.filter(c => {
       const catMatch = filters.category === 'All' || c.category === filters.category;
       const statusMatch = filters.status === 'All' || c.status === filters.status;
-      return catMatch && statusMatch;
+      
+      const searchLower = searchQuery.toLowerCase();
+      const searchMatch = !searchQuery || 
+        c.name.toLowerCase().includes(searchLower) || 
+        c.company.toLowerCase().includes(searchLower) || 
+        c.role.toLowerCase().includes(searchLower);
+
+      return catMatch && statusMatch && searchMatch;
     });
-  }, [contacts, filters]);
+  }, [contacts, filters, searchQuery]);
 
   const handleOpenContact = (contact: Contact) => {
     setActiveContactId(contact.id);
@@ -156,6 +164,24 @@ const CRMPanel: React.FC<CRMPanelProps> = ({ contacts, onFocus, focus, onAddCont
       {view === 'board' ? (
         <>
           <div className="px-12 mb-8 flex space-x-4">
+             <div className="relative flex-1 max-w-sm">
+               <input 
+                 type="text"
+                 placeholder="Search contacts, companies, or roles..."
+                 className="w-full bg-white border border-gray-100 rounded-lg px-10 py-2 text-[12px] font-medium outline-none focus:border-black transition-all"
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+               />
+               <span className="absolute left-3 top-2.5 text-gray-300">🔍</span>
+               {searchQuery && (
+                 <button 
+                   onClick={() => setSearchQuery('')}
+                   className="absolute right-3 top-2.5 text-gray-300 hover:text-gray-500 transition-colors"
+                 >
+                   ✕
+                 </button>
+               )}
+             </div>
              <select 
                className="bg-white border border-gray-100 rounded-lg px-4 py-2 text-[12px] font-bold outline-none focus:border-black"
                value={filters.category}

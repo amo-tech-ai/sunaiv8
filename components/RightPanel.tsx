@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { FocusState, AIInsight, Contact, ActionItem, PipelineStage, EnrichmentSuggestion, ResearchResult, MarketReport } from '../types';
 import { getAIInsight, generateCreativeConcept } from '../services/geminiService';
+import ErrorBoundary from './ErrorBoundary';
 
 import RightPanelDetails from './RightPanelDetails';
 import RightPanelIntelligence from './RightPanelIntelligence';
@@ -94,8 +95,8 @@ const RightPanel: React.FC<RightPanelProps> = ({
   const isContact = focus.type === 'contact';
 
   return (
-    <aside className="w-80 border-l border-gray-200 h-screen bg-white flex flex-col overflow-hidden">
-      <nav className="flex border-b border-gray-100">
+    <aside className="w-80 border-l border-gray-200 h-screen bg-white flex flex-col overflow-hidden shadow-[-1px_0_0_0_rgba(0,0,0,0.05)]">
+      <nav className="flex border-b border-gray-100 bg-white sticky top-0 z-10">
         <button onClick={() => setView('details')} className={`flex-1 py-4 text-[9px] uppercase tracking-widest font-bold transition-all ${view === 'details' ? 'text-black border-b border-black' : 'text-gray-300'}`}>Details</button>
         <button onClick={() => setView('intelligence')} className={`flex-1 py-4 text-[9px] uppercase tracking-widest font-bold transition-all ${view === 'intelligence' ? 'text-black border-b border-black' : 'text-gray-300'}`}>Intelligence</button>
         {isContact && (
@@ -108,39 +109,47 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         {view === 'details' && (
-          <RightPanelDetails 
-            focus={focus} 
-            onUpdateLeadStage={onUpdateLeadStage} 
-            onDelete={onDeleteEntity}
-          />
+          <ErrorBoundary name="Asset Details Tab">
+            <RightPanelDetails 
+              focus={focus} 
+              onUpdateLeadStage={onUpdateLeadStage} 
+              onDelete={onDeleteEntity}
+            />
+          </ErrorBoundary>
         )}
 
         {view === 'intelligence' && (
-          <RightPanelIntelligence 
-            focus={focus}
-            insight={insight}
-            loading={loading}
-            onBudgetUpdate={onBudgetUpdate}
-            onApprovePlan={() => onApprovePlan(focus.data.id)}
-            onAddTaskFromAI={handleAddTaskFromAI}
-          />
+          <ErrorBoundary name="Intelligence Analysis Tab">
+            <RightPanelIntelligence 
+              focus={focus}
+              insight={insight}
+              loading={loading}
+              onBudgetUpdate={onBudgetUpdate}
+              onApprovePlan={() => onApprovePlan(focus.data.id)}
+              onAddTaskFromAI={handleAddTaskFromAI}
+            />
+          </ErrorBoundary>
         )}
 
         {view === 'research' && isContact && (
-          <RightPanelResearch 
-            focus={focus}
-            isResearching={focus.data?.isResearching}
-            onDeepResearch={handleDeepResearch}
-            onOpenMarketReport={onOpenMarketReport}
-          />
+          <ErrorBoundary name="Grounding & Research Tab">
+            <RightPanelResearch 
+              focus={focus}
+              isResearching={focus.data?.isResearching}
+              onDeepResearch={handleDeepResearch}
+              onOpenMarketReport={onOpenMarketReport}
+            />
+          </ErrorBoundary>
         )}
 
         {view === 'creative' && isContact && (
-          <RightPanelCreative 
-            focus={focus}
-            generatingVisual={generatingVisual}
-            onVisualize={handleVisualize}
-          />
+          <ErrorBoundary name="Creative Concept Tab">
+            <RightPanelCreative 
+              focus={focus}
+              generatingVisual={generatingVisual}
+              onVisualize={handleVisualize}
+            />
+          </ErrorBoundary>
         )}
       </div>
     </aside>
