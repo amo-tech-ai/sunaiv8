@@ -28,7 +28,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ activeRoute, onNavigate, navItems
               <button
                 onClick={() => onNavigate(item.name)}
                 className={`w-full text-left py-1.5 text-[14px] transition-colors ${
-                  item.active ? 'text-black font-semibold' : 'text-gray-500 hover:text-gray-800'
+                  activeRoute === item.name ? 'text-black font-semibold' : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
                 {item.name}
@@ -40,9 +40,6 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ activeRoute, onNavigate, navItems
         <div className="my-8 border-t border-gray-100" />
 
         <ul className="space-y-1">
-          <li>
-            <button onClick={() => onNavigate('AI Wizard')} className="w-full text-left py-1.5 text-[14px] text-gray-500 hover:text-gray-800">AI Wizard (Demo)</button>
-          </li>
           <li>
             <button onClick={() => onNavigate('Client Project')} className="w-full text-left py-1.5 text-[14px] text-gray-500 hover:text-gray-800">Client Project (Demo)</button>
           </li>

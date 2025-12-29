@@ -34,12 +34,11 @@ import { createNewTask, updateTaskStatusInList } from './services/taskService';
 import { runDeepResearchOrchestration } from './services/orchestratorService';
 
 // Types & Services
-import { Contact, Project, AuditLog, PipelineStage, ActionItem, Interaction, Deal, EnrichmentSuggestion } from './types';
+import { Contact, Project, AuditLog, PipelineStage, ActionItem, Interaction, Deal, EnrichmentSuggestion, ProjectAnalysis } from './types';
 import { NAV_ITEMS, MOCK_CONTACTS, MOCK_PROJECTS, NEXT_ACTIONS } from './constants';
 import { 
   calculateBudgetProjections, 
-  conductMarketAnalysis, 
-  enrichLeadData 
+  enrichLeadData
 } from './services/geminiService';
 
 const App: React.FC = () => {
@@ -63,7 +62,7 @@ const App: React.FC = () => {
 
   // Mode Detection: Marketing vs Dashboard
   const isMarketingMode = useMemo(() => {
-    const marketingRoutes = ['Home', 'Public Services', 'AI Agents', 'Work', 'Booking', 'About'];
+    const marketingRoutes = ['Home', 'Public Services', 'AI Agents', 'Work', 'Booking', 'About', 'Project Wizard'];
     return marketingRoutes.includes(activeRoute);
   }, [activeRoute]);
 
@@ -81,7 +80,6 @@ const App: React.FC = () => {
   const handleNavigate = (routeName: string) => {
     setActiveRoute(routeName);
     updateFocus(null, null);
-    // Smooth scroll to top on route change
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -101,6 +99,29 @@ const App: React.FC = () => {
     const newTask = createNewTask(taskData);
     setTasks(prev => [newTask, ...prev]);
   }, [setTasks]);
+
+  const handleAddTasks = useCallback((tasksData: Partial<ActionItem>[]) => {
+    const newTasks = tasksData.map(t => createNewTask(t));
+    setTasks(prev => [...newTasks, ...prev]);
+    handleAuditAction('Batch Task Creation', `${newTasks.length} tasks added`);
+  }, [setTasks, handleAuditAction]);
+
+  const handleUpdateTask = useCallback((taskId: string, updates: Partial<ActionItem>) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+  }, [setTasks]);
+
+  const handleLinkTasks = useCallback((dependentId: string, blockerId: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === dependentId) {
+        const current = t.dependencies || [];
+        if (!current.includes(blockerId)) {
+          return { ...t, dependencies: [...current, blockerId] };
+        }
+      }
+      return t;
+    }));
+    handleAuditAction('Task Dependency Linked', `Task ${dependentId} blocked by ${blockerId}`);
+  }, [setTasks, handleAuditAction]);
 
   const handleAddContact = useCallback((contactData: Partial<Contact>) => {
     const newContact: Contact = {
@@ -127,7 +148,7 @@ const App: React.FC = () => {
     setContacts(prev => updateContactInList(prev, leadId, { pipelineStage: nextStage }, focus, setFocus));
   }, [focus, setContacts, setFocus]);
 
-  // Orchestrator Actions (Agentic Workflows)
+  // Orchestrator Actions
   const handleDeepResearchLead = async (leadId: string) => {
     await runDeepResearchOrchestration(leadId, contacts, userLocation, focus, {
       setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction
@@ -177,7 +198,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Fix: Added missing handleBudgetUpdate function to process ROI projections
   const handleBudgetUpdate = async (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     if (!contact) return;
@@ -199,14 +219,25 @@ const App: React.FC = () => {
     }
   };
 
+  const handleProjectAnalysisUpdate = (projectId: string, analysis: ProjectAnalysis) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        const updated = { ...p, analysis };
+        if (focus.id === projectId) setFocus(f => ({ ...f, data: updated }));
+        return updated;
+      }
+      return p;
+    }));
+  };
+
   const renderDashboardContent = () => {
     switch (activeRoute) {
       case 'Main': 
         return <MainPanel onFocusAction={updateFocus} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />;
       case 'Projects': 
-        return <ProjectsPanel projects={projects} focus={focus} onFocus={updateFocus} onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} />;
+        return <ProjectsPanel projects={projects} focus={focus} onFocus={updateFocus} onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} onNavigate={handleNavigate} />;
       case 'Tasks': 
-        return <TasksPanel tasks={tasks} focus={focus} onFocus={updateFocus} onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} />;
+        return <TasksPanel tasks={tasks} focus={focus} onFocus={updateFocus} onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} onUpdateTask={handleUpdateTask} onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} onLinkTasks={handleLinkTasks} />;
       case 'CRM': 
         return <CRMPanel contacts={contacts} focus={focus} onFocus={updateFocus} onAddContact={handleAddContact} onLogInteraction={(id, i) => setContacts(prev => logInteractionLogic(prev, id, i, focus, setFocus))} onAddDeal={(id, d) => setContacts(prev => updateContactInList(prev, id, { deals: [d, ...(prev.find(c => c.id === id)?.deals || [])], dealValue: d.value }, focus, setFocus))} />;
       case 'Services': 
@@ -216,7 +247,12 @@ const App: React.FC = () => {
       case 'Settings': 
         return <SettingsPanel auditLogs={auditLogs} />;
       case 'AI Wizard': 
-        return <WizardPanel onAddLead={(l) => { setContacts(prev => [l, ...prev]); setActiveRoute('CRM'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); setActiveRoute('Projects'); }} />;
+        return <WizardPanel 
+          contacts={contacts}
+          onAddLead={(l) => { setContacts(prev => [l, ...prev]); setActiveRoute('CRM'); }} 
+          onAddProject={(p) => { setProjects(prev => [p, ...prev]); setActiveRoute('Projects'); }} 
+          onAddTasks={handleAddTasks}
+        />;
       default: 
         return <MainPanel onFocusAction={updateFocus} focus={focus} />;
     }
@@ -228,7 +264,8 @@ const App: React.FC = () => {
       case 'Public Services': return <ServicesPage onNavigate={handleNavigate} />;
       case 'AI Agents': return <AgentsPage onNavigate={handleNavigate} />;
       case 'Work': return <CaseStudiesPage onNavigate={handleNavigate} />;
-      case 'Booking': return <WizardPanel onAddLead={(l) => { setContacts(prev => [l, ...prev]); handleNavigate('Main'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); handleNavigate('Projects'); }} />;
+      case 'Booking': return <WizardPanel contacts={contacts} onAddLead={(l) => { setContacts(prev => [l, ...prev]); handleNavigate('Main'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); handleNavigate('Projects'); }} onAddTasks={handleAddTasks} />;
+      case 'Project Wizard': return <WizardPanel contacts={contacts} onAddLead={(l) => { setContacts(prev => [l, ...prev]); handleNavigate('Main'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); handleNavigate('Projects'); }} onAddTasks={handleAddTasks} />;
       case 'About': return <AboutPage onNavigate={handleNavigate} />;
       default: return <LandingPage onNavigate={handleNavigate} />;
     }
@@ -237,8 +274,6 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary name="Agency Platform Root">
       <div className={`flex flex-col md:flex-row h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden ${isMarketingMode ? 'overflow-y-auto' : ''}`}>
-        
-        {/* Conditional Layout Switching */}
         {!isMarketingMode ? (
           <>
             <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
@@ -266,6 +301,8 @@ const App: React.FC = () => {
               onBudgetUpdate={handleBudgetUpdate} onApprovePlan={() => handleApprovePlan(focus.id!)}
               onOpenMarketReport={(id) => setViewingReportId(id)}
               onDeleteEntity={(id) => focus.type === 'contact' ? setContacts(prev => prev.filter(c => c.id !== id)) : focus.type === 'task' ? setTasks(prev => prev.filter(t => t.id !== id)) : null}
+              onProjectAnalysisUpdate={handleProjectAnalysisUpdate}
+              projects={projects}
             />
             <ContextStrip focus={focus} />
             <AssistantChatbot workspace={{ contacts, projects }} />
@@ -276,7 +313,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Global Notifications */}
         <div className="fixed top-8 right-8 z-[200] flex flex-col space-y-4 pointer-events-none">
           {notifications.map(n => (
             <div key={n.id} className={`px-6 py-4 rounded-2xl shadow-2xl border pointer-events-auto animate-in slide-in-from-right-12 duration-300 ${

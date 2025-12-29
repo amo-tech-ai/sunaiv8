@@ -1,220 +1,103 @@
 
 # Sun AI Agency — Project Management Module Architecture
 
-**Version:** 1.0 (Draft)
+**Version:** 2.2 (Complete Gemini 3 Matrix)
 **Theme:** "Quiet Execution"
 **Goal:** Transform project management from administrative overhead into an AI-orchestrated flow of high-value decisions.
 
 ---
 
-## 📊 Feature & Progress Tracker
+## 🤖 AI Agent Matrix: Gemini 3 Integration
 
-| Sequence | Feature / Component | Type | Complexity | Status |
-| :--- | :--- | :---: | :---: | :---: |
-| **PM-01** | **Project Dashboard (Portfolio View)** | UI/Core | Medium | 🔴 |
-| **PM-02** | **Task Kanban Board** | UI/Core | High | 🔴 |
-| **PM-03** | **Project Detail Drawer (Right Panel)** | UI/Core | Low | 🔴 |
-| **PM-04** | **Planner Agent (WBS Generator)** | AI/Logic | High | 🔴 |
-| **PM-05** | **Risk Analyst Agent (Thinking)** | AI/Logic | High | 🔴 |
-| **PM-06** | **Resource Timeline (Gantt)** | UI/Adv | High | 🔴 |
-| **PM-07** | **Auto-Status Reporter** | AI/Gen | Medium | 🔴 |
-| **PM-08** | **Budget Burn Calculator (Python)** | AI/Code | Medium | 🔴 |
-| **PM-09** | **Brief Extractor (PDF/Doc)** | AI/RAG | High | 🔴 |
-| **PM-10** | **Controller Gate (Approval Log)** | Logic | Medium | 🔴 |
+This module utilizes a specialized swarm of agents powered by **Gemini 3** models to handle specific cognitive tasks.
 
-*(Legend: 🟢 Complete, 🟡 In Progress, 🔴 Pending)*
-
----
-
-## 🤖 Gemini 3 Capability Matrix (PM Specific)
-
-| Agent / Feature | Model | Tool/Config | Use Case |
+| Agent Name | Base Model | Configuration | Core Responsibility |
 | :--- | :--- | :--- | :--- |
-| **Planner Agent** | Gemini 3 Pro | `thinkingConfig` (4k) | Breaking a generic "Website Build" brief into 40 specific tasks with dependencies. |
-| **Risk Analyst** | Gemini 3 Pro | `codeExecution` | Calculating schedule variance and burn rates using Python for exact math. |
-| **Market Grounding**| Gemini 3 Pro | `googleSearch` | verifying 3rd party vendor pricing or tech stack viability during planning. |
-| **Status Reporter** | Gemini 3 Flash | `structuredOutput` | Summarizing 50+ chat logs and task updates into a clean JSON status report. |
-| **Resource Optimizer**| Gemini 3 Pro | `thinkingConfig` | Identifying that "Designer A" is double-booked across two different projects. |
+| **Orchestrator** | `gemini-3-flash-preview` | `systemInstruction`: "Router" | Determines which specialized agent to call based on user interaction (e.g., clicking "Analyze Risk" vs "Draft Brief"). |
+| **Planner Agent** | `gemini-3-pro-preview` | `thinkingConfig: { thinkingBudget: 4000 }` | Breaks down high-level project goals into granular Work Breakdown Structures (WBS) with logical dependencies. |
+| **Risk Analyst** | `gemini-3-pro-preview` | `thinkingConfig: { thinkingBudget: 2000 }` | Evaluates project health by reasoning through timeline slippage, resource contention, and complexity. |
+| **Budget Analyst** | `gemini-3-pro-preview` | `tools: [{ codeExecution: {} }]` | Executes Python code to calculate precise burn rates, ROI projections, and Schedule Performance Index (SPI) during wizard intake and project review. |
+| **Grounding Agent** | `gemini-3-pro-preview` | `tools: [{ googleSearch: {} }]` | Verifies external factors like vendor pricing trends, competitor benchmarks, or tech stack viability. |
+| **Creative Director** | `gemini-2.5-flash-image` | `aspectRatio: "16:9"` | Generates visual mood boards and style frames for creative tasks directly within the brief. |
+| **Status Reporter** | `gemini-3-flash-preview` | `responseSchema: StatusUpdate` | Synthesizes git commits, task updates, and meeting notes into a concise, editorial status report. |
 
 ---
 
-## 📐 3-Panel Layout Logic (PM Context)
+## 📐 3-Panel Layout Logic (Responsive & Functional)
 
-### Panel A: Navigation (Context)
-*   **Active Route:** `Projects` or `Tasks`.
-*   **Filters:** "My Tasks", "At Risk Projects", "High Value", "Design Team".
-*   **Quick Actions:** "+ New Project", "+ Quick Task".
+The Project Management module strictly adheres to the **Context · Work · Intelligence** flow.
 
-### Panel B: Work Surface (Execution)
-*   **View 1: Portfolio Grid:** High-level cards of all active engagements with "Traffic Light" health indicators.
-*   **View 2: Kanban Board:** Drag-and-drop tasks (Backlog -> Doing -> Review -> Done).
-*   **View 3: Timeline:** SVG/Canvas Gantt chart showing dependencies.
+### 1. Panel A: Context & Navigation (Left - 25%)
+*   **Role:** Selection & Filtering.
+*   **Components:**
+    *   **Portfolio List:** Scrollable list of active engagements with mini status dots.
+    *   **Quick Filters:** "At Risk", "My Tasks", "High Budget".
+    *   **Wizard Trigger:** "+ New Project" button (Opens Modal).
+*   **Behavior:** Clicking an item here changes the content of Panel B and resets Panel C.
 
-### Panel C: Intelligence (Insight)
-*   **Tab 1: Details:** Static metadata (Team, Budget, Files).
-*   **Tab 2: Intelligence:**
-    *   *Risk Score:* 0-100 (Calculated by Analyst).
-    *   *Bottlenecks:* "Waiting on Client Approval since Tuesday."
-    *   *Suggestions:* "Move deadline or add resource."
-*   **Tab 3: Drafts:** AI-generated Briefs or Status Reports waiting for approval.
+### 2. Panel B: Execution Surface (Center - 50%)
+*   **Role:** The "Work" area. High density, low noise.
+*   **Views (Tabbed):**
+    *   **Grid:** High-level cards with health metrics.
+    *   **Kanban:** `dnd-kit` powered board for task movement.
+    *   **Timeline:** Horizontal scrolling Gantt chart for resource allocation.
+*   **Interaction:** Clicking a Project Card or Task Card puts it into "Focus Mode", triggering Panel C.
 
----
-
-## 🔄 Workflows & User Journeys
-
-### Journey 1: The "Kickoff" (Planner Agent)
-1.  **User** clicks "New Project" -> Opens Wizard.
-2.  **User** inputs: "E-commerce launch for Maison Laurent. Deadline Nov 1."
-3.  **Planner Agent** (Gemini 3 Pro) activates.
-    *   *Thinking:* "E-com requires Design, Frontend, Backend, QA..."
-4.  **UI** displays "Proposed Project Plan" in Panel C (Right).
-    *   *List:* 4 Phases, 12 Milestones, 24 Tasks.
-5.  **User** reviews, edits two dates, and clicks **"Approve Plan"**.
-6.  **System** batch-creates records in Supabase/State.
-
-### Journey 2: The "Firefight" (Risk Agent)
-1.  **System** logs a task moved to "Blocked".
-2.  **Risk Analyst** runs in background.
-    *   *Logic:* Blocked task is on the Critical Path.
-3.  **UI** updates Project Health from "Green" to "Amber".
-4.  **User** sees Amber dot, clicks Project.
-5.  **Panel C** shows: "Risk: Critical Path blocked. Projected delay: 4 days."
-6.  **Agent** suggests: "Email Vendor" or "Swap Resource".
-
-### Journey 3: The "Reporter" (Status Auto-Gen)
-1.  **User** views Client Dashboard.
-2.  **User** clicks "Generate Weekly Report".
-3.  **Agent** (Flash) reads all completed tasks + chat logs from the week.
-4.  **Agent** generates a 3-bullet executive summary.
-5.  **User** edits tone, then clicks **"Send to Client"**.
-
-### Mermaid Diagram: Intelligent Planning Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Wizard
-    participant PlannerAgent
-    participant RiskAgent
-    participant DB
-
-    User->>Wizard: Input Goals & Deadline
-    Wizard->>PlannerAgent: Prompt(Context, Constraints)
-    PlannerAgent->>PlannerAgent: Thinking(Dependencies, Resources)
-    PlannerAgent-->>Wizard: JSON{Phases, Tasks, Milestones}
-    Wizard->>User: Display Proposed Plan
-    User->>RiskAgent: "Check for Feasibility"
-    RiskAgent-->>User: "High Risk: Timeline too tight for QA"
-    User->>Wizard: Adjust Deadline (+1 Week)
-    User->>DB: COMMIT (Create Project)
-```
+### 3. Panel C: Intelligence & Details (Right - 25%)
+*   **Role:** The "Brain". Contextual insights based on Panel B selection.
+*   **States:**
+    *   *Idle:* Shows aggregate portfolio stats (Total Active, Avg Risk).
+    *   *Project Focus:* Shows `Risk Analyst` output, Budget calculated by `Analyst`, and "Drafts" from `Status Reporter`.
+    *   *Task Focus:* Shows dependency chain, assignee availability, and "Blocker" resolution suggestions.
 
 ---
 
-## 🛠 Multistep Implementation Prompts
+## 📱 Screens & Routes
 
-### 🟦 PROMPT 1: Project Dashboard & Data Model
-**Goal:** Create the high-level portfolio view and define the Project/Task TypeScript interfaces.
+The PM module is a Single Page Application (SPA) experience primarily residing at `/projects` but dynamically rendering views.
 
-**Tasks & Steps:**
-1.  **Update `types.ts`:** Define `Project` (phase, health, team), `Task` (dependencies, effort), and `Milestone`.
-2.  **Create `ProjectsPanel.tsx`:** Implement a grid view of `ProjectCard` components.
-3.  **Visuals:** Each card needs a "Health Dot" (Green/Amber/Red) and a "Mini Sparkline" of completed tasks.
-4.  **Logic:** Clicking a card sets `focus` state to that project (triggering Right Panel).
-
-**Success Criteria:**
-- Renders `MOCK_PROJECTS` in a responsive grid.
-- Health dots render correctly based on status.
-- Clicking updates the global Focus context.
-
-**Production Checklist:**
-- [ ] Responsive grid (1 col mobile, 3 col desktop).
-- [ ] Text truncation for long descriptions.
-- [ ] Accessible ARIA labels on cards.
+| Route State | Screen Name | Layout Configuration |
+| :--- | :--- | :--- |
+| `/projects` | **Portfolio View** | Panel A (List) + Panel B (Grid) + Panel C (Portfolio Stats) |
+| `/projects?view=timeline` | **Resource View** | Panel A (List) + Panel B (Gantt) + Panel C (Conflict Resolver) |
+| `/tasks` | **Execution View** | Panel A (Filters) + Panel B (Kanban) + Panel C (Task Details) |
+| `modal:wizard` | **New Project** | Full-screen overlay with Stepper UI (Scope -> Budget -> Plan -> Review) |
 
 ---
 
-### 🟩 PROMPT 2: The Kanban Board (Execution)
-**Goal:** A fully functional drag-and-drop task board within the Main Panel.
+## 🔄 User Journeys & Workflows
 
-**Tasks & Steps:**
-1.  **Create `TasksPanel.tsx`:** A horizontal scrolling container with columns (Backlog, In Progress, Review, Done).
-2.  **Task Cards:** Minimalist cards showing Title, Assignee (Avatar Stack), and Priority Badge.
-3.  **Interaction:** Implement `onDragEnd` logic (simulated or using dnd-kit) to update task status.
-4.  **Controller Gate:** Moving a task to "Done" triggers a confetti effect and logs an `AuditLog` entry.
+### Journey 1: The Intelligent Kickoff (Wizard)
+1.  **Trigger:** User clicks "+ New Project".
+2.  **Input:** User types "Rebrand for Maison Laurent. Q3 Launch."
+3.  **Agent Action (Analyst):** User clicks "Run Estimate". Gemini 3 Pro (Code Exec) calculates budget breakdown ($150k).
+4.  **Agent Action (Planner):** Gemini 3 Pro (Thinking) generates a 12-week WBS with Phases (Discovery, Design, Dev).
+5.  **Refinement:** User reviews cost vs timeline.
+6.  **Commit:** User clicks "Launch". System writes to DB.
 
-**Success Criteria:**
-- Smooth movement between columns.
-- Visual feedback on hover/drag.
-- State updates persist to `localStorage`.
+### Journey 2: The Firefight (Risk Mitigation)
+1.  **Trigger:** System detects a "Critical" task is 3 days overdue.
+2.  **Agent Action (Risk):** Background agent flags Project A as "At Risk".
+3.  **User Action:** User sees Red Dot on Project A in Panel A. Clicks it.
+4.  **Panel C Update:** Displays "Risk Analysis: Critical Path delay. 3 days slip expected."
+5.  **Suggestion:** Agent offers "Resolution: Swap Junior Designer for Senior (Amara)."
+6.  **Resolution:** User clicks "Apply Resource Swap". System updates assignments.
 
-**Production Checklist:**
-- [ ] Horizontal scrollbar hidden but functional.
-- [ ] Empty states for columns ("No tasks in review").
-- [ ] Optimistic UI updates (update state before backend confirms).
-
----
-
-### 🟨 PROMPT 3: The Planner Agent (AI WBS)
-**Goal:** Generate a structured task list from a simple text description using Gemini 3 Pro.
-
-**Tasks & Steps:**
-1.  **Service:** Create `services/ai/plannerAgent.ts`.
-2.  **Function:** `generateProjectPlan(brief: string, constraints: any)`.
-3.  **Config:** Use `thinkingConfig` (budget 4096) to reason about dependencies.
-4.  **Schema:** Enforce `responseSchema` to return `Array<Task>` with `estimatedDays` and `dependencyId`.
-5.  **UI:** Add a "Magic Plan" button in the `WizardPanel` that populates the task list.
-
-**Success Criteria:**
-- Input: "Launch a coffee brand website."
-- Output: "1. Brand Identity, 2. Wireframes, 3. Shopify Setup..."
-- Tasks have logical ordering (Design before Code).
-
-**Production Checklist:**
-- [ ] Loading state handled (Thinking can take 5-10s).
-- [ ] Error handling for malformed JSON.
-- [ ] User can delete/edit AI suggestions before committing.
+### Journey 3: The Financial Audit
+1.  **Trigger:** User focuses on "Fintech App" project.
+2.  **User Action:** Clicks "Run Budget Audit" in Panel C.
+3.  **Agent Action (Analyst):** Gemini 3 Pro (Code Execution) runs Python script to sum hours * rates vs total budget.
+4.  **Output:** Returns JSON `{ burnRate: 1.2, estimatedCompletionCost: 150000 }`.
+5.  **UI Display:** Panel C renders a burn-down chart and a "Budget Alert" warning if > 1.0.
 
 ---
 
-### 🟥 PROMPT 4: The Resource Optimizer (Gantt)
-**Goal:** Visualize the project timeline and highlight resource conflicts.
+## 🛠 Implementation Best Practices
 
-**Tasks & Steps:**
-1.  **Component:** Create `ResourceTimeline.tsx`.
-2.  **Visualization:** Render tasks as horizontal bars on a time axis.
-3.  **AI Logic:** `analyzeResourceConflicts(projects)`.
-4.  **Visual Feedback:** If "Julian" is assigned two "High Effort" tasks on the same day, draw a red hatch pattern on the bar.
-5.  **Right Panel:** Show "Conflict Detected" alert in the Intelligence tab.
-
-**Success Criteria:**
-- Scrollable timeline view (Horizontal).
-- Visual indicator for overlapping assignments.
-- "Resolve" button that auto-shifts one task by +2 days.
-
-**Production Checklist:**
-- [ ] Date math utility (using `date-fns` or native `Date`).
-- [ ] Performance optimization (windowing) for large task lists.
-- [ ] Mobile fallback (List view instead of Gantt).
-
----
-
-### 🟪 PROMPT 5: The Risk Analyst (Code Execution)
-**Goal:** Use Python to calculate precise project metrics (Schedule Variance, CPI).
-
-**Tasks & Steps:**
-1.  **Service:** Create `services/ai/analystAgent.ts`.
-2.  **Function:** `calculateProjectRisk(projectData)`.
-3.  **Tool:** Enable `codeExecution`.
-4.  **Prompt:** "Given these tasks, start dates, and % complete, write Python to calculate the Schedule Performance Index (SPI)."
-5.  **UI:** Render the SPI value in the Project Header. If `< 0.9`, show "At Risk".
-
-**Success Criteria:**
-- Returns a float value (e.g., 0.85).
-- UI updates color based on the threshold.
-- "Show Math" dropdown displays the Python code used.
-
-**Production Checklist:**
-- [ ] Fallback if code execution fails.
-- [ ] Cache results to prevent re-running on every render.
-- [ ] Explainable tooltip for non-technical users ("SPI < 1 means we are behind schedule").
+1.  **Optimistic UI:** When moving cards in Kanban, update UI immediately. Rollback if API fails.
+2.  **Quiet AI:** Never auto-popups. Intelligence (Panel C) waits for a click. Risk alerts are subtle dots, not modals.
+3.  **Code Execution Transparency:** When `Analyst` runs Python, show a small "Computing..." indicator so the user trusts the math.
+4.  **Responsive Grid:**
+    *   **Desktop:** 3-Panel (25/50/25).
+    *   **Tablet:** 2-Panel (30/70) - Panel C slides over as a drawer.
+    *   **Mobile:** 1-Panel (Stack) - Navigation Drawer -> List -> Details.

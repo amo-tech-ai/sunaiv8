@@ -165,5 +165,6 @@ export const NAV_ITEMS = [
   { name: 'Projects', active: false },
   { name: 'Tasks', active: false },
   { name: 'CRM', active: true },
+  { name: 'Project Wizard', active: false },
   { name: 'Settings', active: false },
 ];

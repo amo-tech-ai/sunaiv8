@@ -27,9 +27,8 @@ interface RightPanelProps {
   onApprovePlan: (leadId: string) => void;
   onOpenMarketReport: (leadId: string) => void;
   onDeleteEntity: (id: string) => void;
-  // New handlers for Project Agent
   onProjectAnalysisUpdate?: (projectId: string, analysis: any) => void;
-  projects?: Project[]; // Need access to all projects for context
+  projects?: Project[];
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ 
@@ -93,7 +92,6 @@ const RightPanel: React.FC<RightPanelProps> = ({
 
   const handleApplyOptimization = (projectId: string, optimization: any) => {
     onAuditAction('Resource Reallocation', `${optimization.collaboratorName}: ${optimization.suggestedMove}`);
-    // Ideally this would trigger a state update in App.tsx to move the collaborator
   };
 
   const handleAddTaskFromAI = (title: string) => {

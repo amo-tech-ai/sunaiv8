@@ -53,6 +53,18 @@ export interface MarketReport {
   localIntelligence?: string; 
 }
 
+export interface WBSTask {
+  title: string;
+  description: string;
+  effort: 'Low' | 'Medium' | 'High';
+}
+
+export interface WBSPhase {
+  name: string;
+  duration: string;
+  tasks: WBSTask[];
+}
+
 export interface Milestone {
   week: string;
   title: string;
@@ -62,6 +74,7 @@ export interface Milestone {
 
 export interface ProjectPlan {
   milestones: Milestone[];
+  wbs?: WBSPhase[];
   reasoning: string;
   dependencies: string[];
   assumptions: string[];
@@ -184,6 +197,7 @@ export interface ActionItem {
   linkedEntityType?: 'contact' | 'project';
   dueDate?: string;
   collaborators?: Collaborator[];
+  dependencies?: string[];
 }
 
 export interface Project {
@@ -197,6 +211,7 @@ export interface Project {
   startDate?: string;
   description?: string;
   milestones?: Milestone[];
+  wbs?: WBSPhase[];
   team?: Collaborator[];
   analysis?: ProjectAnalysis;
   isAnalyzing?: boolean;

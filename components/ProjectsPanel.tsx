@@ -9,6 +9,7 @@ interface ProjectsPanelProps {
   onFocus: (type: 'project', item: Project) => void;
   focus: FocusState;
   onAddProject: (p: Partial<Project>) => void;
+  onNavigate?: (route: string) => void;
 }
 
 const ProjectRow: React.FC<{ 
@@ -25,6 +26,19 @@ const ProjectRow: React.FC<{
     'Web': 'bg-gray-50 text-gray-600'
   };
 
+  const getStatusColor = () => {
+    if (project.analysis) {
+      if (project.analysis.riskScore > 70) return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]';
+      if (project.analysis.riskScore > 30) return 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
+      return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+    }
+    return project.status === 'On Track' 
+      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+      : project.status === 'At Risk' 
+        ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]' 
+        : 'bg-gray-300';
+  };
+
   return (
     <div className="mb-2">
       <div 
@@ -37,11 +51,20 @@ const ProjectRow: React.FC<{
       >
         <div className="flex-1 flex items-center space-x-6">
           <div className="flex items-center space-x-3 w-32 shrink-0">
-            <div className={`w-2 h-2 rounded-full ${
-              project.status === 'On Track' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 
-              project.status === 'At Risk' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]' : 'bg-gray-300'
-            }`} />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest truncate">{project.phase}</span>
+            <div className="relative">
+              <div className={`w-2 h-2 rounded-full transition-colors duration-500 ${getStatusColor()}`} />
+              {project.analysis && project.analysis.riskScore > 70 && (
+                <div className="absolute -inset-1 bg-red-500 rounded-full animate-ping opacity-20" />
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest truncate leading-tight">{project.phase}</span>
+              {project.analysis && (
+                <span className={`text-[9px] font-bold mt-0.5 ${project.analysis.riskScore > 70 ? 'text-red-500' : 'text-gray-400'}`}>
+                  Risk: {project.analysis.riskScore}
+                </span>
+              )}
+            </div>
           </div>
           <div>
             <h4 className="text-[15px] font-medium text-gray-900 leading-tight mb-0.5">{project.name}</h4>
@@ -89,15 +112,19 @@ const ProjectRow: React.FC<{
   );
 };
 
-const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus, onAddProject }) => {
+const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus, onAddProject, onNavigate }) => {
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newProject, setNewProject] = useState<Partial<Project>>({ name: '', client: '', type: 'AI' });
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
 
   const handleToggleTimeline = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     setExpandedProjectId(prev => prev === projectId ? null : projectId);
+  };
+
+  const handleCreateProject = () => {
+    if (onNavigate) {
+      onNavigate('AI Wizard');
+    }
   };
 
   return (
@@ -107,14 +134,14 @@ const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus,
           <div>
             <h1 className="font-serif text-3xl mb-4 tracking-tight">Active Engagements</h1>
             <p className="text-[14px] text-gray-400">
-              {projects.length} total engagements · {projects.filter(p => p.status === 'At Risk').length} at risk
+              {projects.length} total engagements · {projects.filter(p => p.status === 'At Risk' || (p.analysis && p.analysis.riskScore > 50)).length} at risk
             </p>
           </div>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleCreateProject}
             className="bg-black text-white px-6 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-all active:scale-95 shadow-sm"
           >
-            Create Project
+            + New Project
           </button>
         </div>
 
@@ -170,66 +197,6 @@ const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus,
           </div>
         )}
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
-            <h2 className="font-serif text-2xl mb-8">Launch New Project</h2>
-            <div className="space-y-6 mb-10">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 mb-2 block">Project Name</label>
-                <input 
-                  autoFocus
-                  className="w-full border-b border-gray-200 py-2 outline-none focus:border-black text-lg font-serif"
-                  placeholder="e.g. SS25 Campaign Transformation"
-                  value={newProject.name}
-                  onChange={e => setNewProject({...newProject, name: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 mb-2 block">Client</label>
-                <input 
-                  className="w-full border-b border-gray-200 py-2 outline-none focus:border-black text-[14px]"
-                  placeholder="e.g. Maison Laurent"
-                  value={newProject.client}
-                  onChange={e => setNewProject({...newProject, client: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 mb-2 block">Type</label>
-                <select 
-                  className="w-full bg-transparent border-b border-gray-200 py-2 outline-none focus:border-black text-[14px]"
-                  value={newProject.type}
-                  onChange={e => setNewProject({...newProject, type: e.target.value as any})}
-                >
-                  <option value="AI">AI Agent Implementation</option>
-                  <option value="Web App">Platform Development</option>
-                  <option value="E-commerce">Retail Experience</option>
-                  <option value="Web">Brand Site</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-gray-400 mb-2 block">Start Date</label>
-                <input 
-                  type="date"
-                  className="w-full border-b border-gray-200 py-2 outline-none focus:border-black text-[14px]"
-                  value={newProject.startDate ? new Date(newProject.startDate).toISOString().split('T')[0] : ''}
-                  onChange={e => setNewProject({...newProject, startDate: new Date(e.target.value).toISOString()})}
-                />
-              </div>
-            </div>
-            <div className="flex space-x-4">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-[12px] font-bold text-gray-400 uppercase">Cancel</button>
-              <button 
-                onClick={() => { onAddProject(newProject); setIsModalOpen(false); }}
-                className="flex-1 py-3 bg-black text-white rounded-xl text-[12px] font-bold uppercase tracking-widest shadow-lg active:scale-95"
-              >
-                Launch Project
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
