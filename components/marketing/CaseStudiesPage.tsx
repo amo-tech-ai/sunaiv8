@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { MarketingHeader, MarketingFooter } from './LandingPage';
+import MarketingHeader from './Header';
+import MarketingFooter from './Footer';
 
 interface CaseStudiesPageProps {
   onNavigate: (route: string) => void;
