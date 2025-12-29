@@ -13,7 +13,7 @@ import RightPanel from './components/RightPanel';
 import MarketReportView from './components/MarketReportView';
 import ContextStrip from './components/ContextStrip';
 import AssistantChatbot from './components/AssistantChatbot';
-import { Contact, Project, FocusState, FocusType, AuditLog, PipelineStage, ActionItem, Interaction, WorkflowDraft, Deal, ResearchResult, MarketReport, BudgetAnalysis } from './types';
+import { Contact, Project, FocusState, FocusType, AuditLog, PipelineStage, ActionItem, Interaction, WorkflowDraft, Deal, ResearchResult, MarketReport, BudgetAnalysis, ProjectAnalysis } from './types';
 import { NAV_ITEMS, MOCK_CONTACTS, MOCK_PROJECTS, NEXT_ACTIONS } from './constants';
 import { generateWorkflowDraft, calculateBudgetProjections } from './services/geminiService';
 
@@ -236,6 +236,17 @@ const App: React.FC = () => {
     setTasks(prev => [newTask, ...prev]);
   };
 
+  const handleProjectAnalysisUpdate = (projectId: string, analysis: ProjectAnalysis) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        const updated = { ...p, analysis };
+        if (focus.id === projectId) setFocus({ ...focus, data: updated });
+        return updated;
+      }
+      return p;
+    }));
+  };
+
   const handleAuditAction = (action: string, context: string) => {
     const newLog: AuditLog = {
       id: Math.random().toString(36).substr(2, 9),
@@ -250,7 +261,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeRoute) {
       case 'Main': return <MainPanel onFocusAction={handleFocusAction} focus={focus} orchestratorStatus={orchestratorStatus} isAnyAgentActive={isAnyAgentActive} />;
-      case 'Projects': return <ProjectsPanel projects={projects} focus={focus} onFocus={handleFocusAction} />;
+      case 'Projects': return <ProjectsPanel projects={projects} focus={focus} onFocus={handleFocusAction} onAddProject={(p) => setProjects([p as Project, ...projects])} />;
       case 'Tasks': return <TasksPanel tasks={tasks} focus={focus} onFocus={handleFocusAction} />;
       case 'CRM': return <CRMPanel contacts={contacts} focus={focus} onFocus={handleFocusAction} onAddContact={handleAddContact} onLogInteraction={handleLogInteraction} onAddDeal={handleAddDeal} />;
       case 'Settings': return <SettingsPanel auditLogs={auditLogs} />;
@@ -281,6 +292,7 @@ const App: React.FC = () => {
       <RightPanel 
         focus={focus} 
         history={history} 
+        projects={projects}
         onFocusFromHistory={(h) => setFocus(h)}
         onAuditAction={handleAuditAction}
         onAddTask={handleAddTask}
@@ -293,6 +305,13 @@ const App: React.FC = () => {
         onMarketReportUpdate={handleMarketReportUpdate}
         onBudgetUpdate={handleBudgetUpdate}
         onOpenMarketReport={(id) => setViewingReportId(id)}
+        onProjectAnalysisUpdate={handleProjectAnalysisUpdate}
+        onDeleteEntity={(id) => {
+          if (focus.type === 'contact') setContacts(prev => prev.filter(c => c.id !== id));
+          if (focus.type === 'project') setProjects(prev => prev.filter(p => p.id !== id));
+          if (focus.type === 'task') setTasks(prev => prev.filter(t => t.id !== id));
+          setFocus({ type: null, id: null, data: null });
+        }}
       />
       <ContextStrip focus={focus} />
       <AssistantChatbot workspace={{ contacts, projects }} />

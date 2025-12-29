@@ -15,10 +15,66 @@ export const STATS: DashboardStats = {
   networkGrowth: [1100, 1150, 1220, 1280, 1350, 1420]
 };
 
+const TODAY = new Date();
+const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+
 export const MOCK_PROJECTS: Project[] = [
-  { id: 'p1', name: 'AI Support Chatbot', client: 'Luxury E-commerce Brand', type: 'AI', phase: 'Training', duration: '6 weeks', status: 'On Track', description: 'Advanced customer support agent with RAG integration.' },
-  { id: 'p2', name: 'SaaS Dashboard Platform', client: 'Fintech Startup', type: 'Web App', phase: 'Development', duration: '12 weeks', status: 'On Track', description: 'Real-time financial analytics dashboard.' },
-  { id: 'p3', name: 'Shopify Headless Store', client: 'Premium Retail Brand', type: 'E-commerce', phase: 'Staging', duration: '10 weeks', status: 'At Risk', description: 'Custom Hydrogen-based storefront.' },
+  { 
+    id: 'p1', 
+    name: 'AI Support Chatbot', 
+    client: 'Luxury E-commerce Brand', 
+    type: 'AI', 
+    phase: 'Training', 
+    duration: '6 weeks', 
+    status: 'On Track', 
+    startDate: new Date(TODAY.getTime() - ONE_WEEK * 2).toISOString(), // Started 2 weeks ago
+    description: 'Advanced customer support agent with RAG integration.',
+    team: [COLLABORATORS.js, COLLABORATORS.aa],
+    milestones: [
+      { week: 'Week 1', title: 'Data Ingestion', description: 'Scraping support docs and FAQs.', effort: 'Medium' },
+      { week: 'Week 2', title: 'Model Tuning', description: 'Fine-tuning Gemini on brand voice.', effort: 'High' },
+      { week: 'Week 3', title: 'Integration', description: 'Connecting to Shopify API.', effort: 'High' },
+      { week: 'Week 4', title: 'UAT', description: 'Internal testing with support team.', effort: 'Low' },
+      { week: 'Week 5', title: 'Soft Launch', description: 'Deploy to 10% of traffic.', effort: 'Medium' },
+      { week: 'Week 6', title: 'Full Release', description: 'Global rollout.', effort: 'Low' }
+    ]
+  },
+  { 
+    id: 'p2', 
+    name: 'SaaS Dashboard Platform', 
+    client: 'Fintech Startup', 
+    type: 'Web App', 
+    phase: 'Development', 
+    duration: '12 weeks', 
+    status: 'On Track', 
+    startDate: new Date(TODAY.getTime() - ONE_WEEK * 4).toISOString(), // Started 4 weeks ago
+    description: 'Real-time financial analytics dashboard.',
+    team: [COLLABORATORS.lm, COLLABORATORS.aa],
+    milestones: [
+      { week: 'Week 1-2', title: 'Architecture', description: 'DB schema and API design.', effort: 'High' },
+      { week: 'Week 3-6', title: 'Frontend Core', description: 'React component library build.', effort: 'High' },
+      { week: 'Week 7-10', title: 'Data Pipelines', description: 'Real-time websocket integration.', effort: 'Medium' },
+      { week: 'Week 11-12', title: 'Polish', description: 'Animations and QA.', effort: 'Low' }
+    ]
+  },
+  { 
+    id: 'p3', 
+    name: 'Shopify Headless Store', 
+    client: 'Premium Retail Brand', 
+    type: 'E-commerce', 
+    phase: 'Staging', 
+    duration: '10 weeks', 
+    status: 'At Risk', 
+    startDate: new Date(TODAY.getTime() + ONE_WEEK).toISOString(), // Starts next week
+    description: 'Custom Hydrogen-based storefront.',
+    team: [COLLABORATORS.js, COLLABORATORS.lm],
+    milestones: [
+      { week: 'Week 1', title: 'Design Handoff', description: 'Figma to Code conversion.', effort: 'Medium' },
+      { week: 'Week 2-4', title: 'CMS Setup', description: 'Sanity studio configuration.', effort: 'Medium' },
+      { week: 'Week 5', title: 'Checkout Logic', description: 'Custom cart rules implementation.', effort: 'High' },
+      { week: 'Week 6', title: 'QA', description: 'Bug fixing and performance tuning.', effort: 'High' }
+    ]
+  },
 ];
 
 export const MOCK_SERVICES: Service[] = [

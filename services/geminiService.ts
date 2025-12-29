@@ -12,3 +12,4 @@ export * from "./ai/strategistAgent";
 export * from "./ai/assistantAgent";
 export * from "./ai/creativeAgent";
 export * from "./ai/workflowAgent";
+export * from "./ai/projectManagerAgent";

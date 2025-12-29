@@ -25,7 +25,9 @@ export const MarketingFooter: React.FC<FooterProps> = ({ onNavigate }) => (
         <ul className="space-y-3 text-[13px] text-gray-400">
           <li onClick={() => onNavigate('Home')} className="hover:text-white transition-colors cursor-pointer">Home</li>
           <li onClick={() => onNavigate('Public Services')} className="hover:text-white transition-colors cursor-pointer">Expertise Catalog</li>
-          <li onClick={() => onNavigate('AI Agents')} className="hover:text-white transition-colors cursor-pointer">Autonomous Workforce</li>
+          <li onClick={() => onNavigate('AI Agents')} className="hover:text-white transition-colors cursor-pointer flex items-center">
+            AI Agents <span className="ml-2 text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">NEW</span>
+          </li>
           <li onClick={() => onNavigate('Work')} className="hover:text-white transition-colors cursor-pointer">Selected Case Studies</li>
           <li onClick={() => onNavigate('About')} className="hover:text-white transition-colors cursor-pointer">Our Manifesto</li>
         </ul>
@@ -71,6 +73,3 @@ export const MarketingFooter: React.FC<FooterProps> = ({ onNavigate }) => (
       </div>
     </div>
   </footer>
-);
-
-export default MarketingFooter;

@@ -67,6 +67,21 @@ export interface ProjectPlan {
   assumptions: string[];
 }
 
+export interface ResourceSwap {
+  collaboratorName: string;
+  currentRole: string;
+  suggestedMove: string;
+  impact: string;
+}
+
+export interface ProjectAnalysis {
+  riskScore: number; // 0-100
+  riskSummary: string;
+  bottlenecks: string[];
+  resourceOptimization: ResourceSwap[];
+  mitigationSteps: string[];
+}
+
 export interface BudgetAnalysis {
   totalEstimatedCost: number;
   roiProjection: number;
@@ -179,7 +194,12 @@ export interface Project {
   phase: string;
   duration: string;
   status: ProjectStatus;
+  startDate?: string;
   description?: string;
+  milestones?: Milestone[];
+  team?: Collaborator[];
+  analysis?: ProjectAnalysis;
+  isAnalyzing?: boolean;
 }
 
 export interface AuditLog {
