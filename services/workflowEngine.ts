@@ -69,3 +69,13 @@ export const executeIntelligencePlan = async (
     tasks: generatedTasks
   };
 };
+
+/**
+ * Simulates waking up the agent swarm for a specific project.
+ */
+export const activateProjectAgents = async (project: Project): Promise<void> => {
+  // In a real system, this would trigger Edge Functions.
+  console.log(`[WorkflowEngine] Activating swarm for project: ${project.name}`);
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  return;
+};

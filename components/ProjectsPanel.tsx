@@ -20,7 +20,8 @@ const ProjectRow: React.FC<{
   onClick: () => void;
   onToggleTimeline: (e: React.MouseEvent) => void;
   onOpenIntelligence?: () => void;
-}> = ({ project, isActive, isExpanded, onClick, onToggleTimeline, onOpenIntelligence }) => {
+  onOpenPlan?: () => void;
+}> = ({ project, isActive, isExpanded, onClick, onToggleTimeline, onOpenIntelligence, onOpenPlan }) => {
   const badgeColors = {
     'AI': 'bg-purple-50 text-purple-600',
     'Web App': 'bg-blue-50 text-blue-600',
@@ -75,12 +76,20 @@ const ProjectRow: React.FC<{
         </div>
         <div className="flex items-center space-x-8 text-[12px]">
           {/* Intelligence Trigger */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onOpenIntelligence && onOpenIntelligence(); }}
-            className="hidden group-hover:flex items-center space-x-1 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-[9px] font-bold uppercase tracking-widest border border-purple-100 hover:bg-purple-100 transition-all"
-          >
-            <span>✨ View Intelligence</span>
-          </button>
+          <div className="hidden group-hover:flex space-x-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onOpenIntelligence && onOpenIntelligence(); }}
+              className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-[9px] font-bold uppercase tracking-widest border border-purple-100 hover:bg-purple-100 transition-all"
+            >
+              <span>✨ Intelligence</span>
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onOpenPlan && onOpenPlan(); }}
+              className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-full text-[9px] font-bold uppercase tracking-widest border border-gray-200 hover:bg-black hover:text-white transition-all"
+            >
+              <span>⚡ Execute</span>
+            </button>
+          </div>
 
           {project.team && project.team.length > 0 && (
             <div className="flex -space-x-2">
@@ -134,6 +143,13 @@ const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus,
   const handleCreateProject = () => {
     if (onNavigate) {
       onNavigate('AI Wizard');
+    }
+  };
+
+  const handleOpenPlan = (project: Project) => {
+    onFocus('project', project);
+    if (onNavigate) {
+      onNavigate('Execution Plan');
     }
   };
 
@@ -194,6 +210,7 @@ const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus,
                   onClick={() => onFocus('project', project)}
                   onToggleTimeline={(e) => handleToggleTimeline(e, project.id)}
                   onOpenIntelligence={() => onOpenIntelligence && onOpenIntelligence(project)}
+                  onOpenPlan={() => handleOpenPlan(project)}
                 />
               ))}
             </div>

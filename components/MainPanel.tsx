@@ -2,6 +2,7 @@
 import React from 'react';
 import { ActionItem, Contact, FocusState, Collaborator, AuditLog } from '../types';
 import { NEXT_ACTIONS, RECENT_ACTIVITY, STATS, MOCK_CONTACTS } from '../constants';
+import AgentTeamView from './AgentTeamView';
 
 interface MainPanelProps {
   onFocusAction: (type: 'task' | 'contact', item: ActionItem | Contact) => void;
@@ -66,28 +67,21 @@ const ActionRow: React.FC<{
 );
 
 const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestratorStatus, agents, auditLogs }) => {
+  // Default agent state if not provided
+  const agentState = agents || { research: 'Idle', planning: 'Idle', automation: 'Idle' };
+
   return (
     <main className="flex-1 h-screen overflow-y-auto bg-[#fafafa] p-12 pb-32 scroll-smooth">
-      <div className="mb-10 flex items-center space-x-12 border-b border-gray-100 pb-6 overflow-x-auto no-scrollbar">
-        <div className="flex items-center space-x-3 flex-shrink-0">
-          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-300">Agents:</span>
+      {/* Orchestrator Status Ticker */}
+      <div className="mb-10 flex items-center space-x-6 border-b border-gray-100 pb-6 sticky top-0 bg-[#fafafa] z-20 pt-2">
+        <div className="flex items-center space-x-2">
+          <div className={`w-2 h-2 rounded-full ${orchestratorStatus && orchestratorStatus !== 'Idle' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Orchestrator</span>
         </div>
-        
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          <div className={`w-1.5 h-1.5 rounded-full ${agents?.research === 'Running' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-200'}`} />
-          <span className={`text-[11px] font-bold ${agents?.research === 'Running' ? 'text-black' : 'text-gray-300'}`}>Research</span>
-        </div>
-
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          <div className={`w-1.5 h-1.5 rounded-full ${agents?.planning === 'Running' ? 'bg-blue-500 animate-pulse' : 'bg-gray-200'}`} />
-          <span className={`text-[11px] font-bold ${agents?.planning === 'Running' ? 'text-black' : 'text-gray-300'}`}>Planning</span>
-        </div>
-        
-        {orchestratorStatus && orchestratorStatus !== 'Idle' && (
-          <div className="ml-auto text-[11px] text-gray-400 font-serif italic whitespace-nowrap">
-            "{orchestratorStatus}"
-          </div>
-        )}
+        <div className="h-4 w-px bg-gray-200" />
+        <span className="text-[11px] font-serif italic text-gray-500 truncate">
+          {orchestratorStatus !== 'Idle' ? orchestratorStatus : "System operational. Monitoring inputs."}
+        </span>
       </div>
 
       <header className="mb-12">
@@ -98,6 +92,9 @@ const MainPanel: React.FC<MainPanelProps> = ({ onFocusAction, focus, orchestrato
           <StatPill label="Active Clients" value={STATS.activeClients} />
         </div>
       </header>
+
+      {/* Agents Visualization */}
+      <AgentTeamView agents={agentState} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
         <div className="lg:col-span-2">

@@ -180,25 +180,39 @@ const ProjectIntelligencePanel: React.FC<ProjectIntelligencePanelProps> = ({ pro
           {activeTab === 'Automations' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {intel.automations.map((auto) => (
-                <div key={auto.id} className={`bg-white p-6 rounded-xl border shadow-sm relative overflow-hidden transition-all ${isSelected(auto.id) ? 'border-emerald-500' : 'border-gray-100'}`}>
-                  {auto.riskLevel === 'High' && <div className="absolute top-0 right-0 w-2 h-full bg-red-400/20" />}
-                  <div className="flex items-center space-x-2 text-[10px] text-gray-400 font-mono mb-4">
-                    <span className="bg-gray-100 px-2 py-1 rounded">{auto.trigger}</span>
-                    <span className="text-gray-300">→</span>
-                    <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded">{auto.action}</span>
+                <div key={auto.id} className={`bg-white p-6 rounded-xl border shadow-sm relative overflow-hidden transition-all ${isSelected(auto.id) ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-100 hover:shadow-md'}`}>
+                  {/* Risk Indicator Strip */}
+                  {auto.riskLevel === 'High' && <div className="absolute top-0 right-0 w-1 h-full bg-red-400" />}
+                  
+                  {/* Trigger -> Action Flow */}
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-500 font-mono mb-4">
+                    <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">{auto.trigger}</span>
+                    <span className="text-gray-300">➜</span>
+                    <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">{auto.action}</span>
                   </div>
-                  <h3 className="font-serif text-lg text-gray-900 italic mb-2">"{auto.outcome}"</h3>
-                  <div className="flex justify-between items-center mt-6">
-                    <span className={`text-[10px] font-bold ${auto.riskLevel === 'Low' ? 'text-emerald-500' : 'text-amber-500'}`}>
-                      Risk: {auto.riskLevel}
-                    </span>
+                  
+                  {/* Outcome */}
+                  <h3 className="font-serif text-[15px] text-gray-900 italic mb-2 leading-relaxed">"{auto.outcome}"</h3>
+                  
+                  {/* Footer: Risk & Enable */}
+                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-50">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">Risk</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        auto.riskLevel === 'Low' ? 'bg-emerald-50 text-emerald-600' : 
+                        auto.riskLevel === 'Medium' ? 'bg-amber-50 text-amber-600' : 
+                        'bg-red-50 text-red-600'
+                        }`}>
+                        {auto.riskLevel}
+                        </span>
+                    </div>
                     <button 
                       onClick={() => toggleItem(auto, 'automation')}
                       className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        isSelected(auto.id) ? 'bg-black text-white' : 'border border-gray-200 text-gray-500 hover:border-black hover:text-black'
+                        isSelected(auto.id) ? 'bg-black text-white shadow-md' : 'border border-gray-200 text-gray-500 hover:border-black hover:text-black'
                       }`}
                     >
-                      {isSelected(auto.id) ? 'Active' : 'Enable'}
+                      {isSelected(auto.id) ? 'Selected' : 'Enable'}
                     </button>
                   </div>
                 </div>
@@ -213,26 +227,36 @@ const ProjectIntelligencePanel: React.FC<ProjectIntelligencePanelProps> = ({ pro
                   <div className="flex-1 mb-4 md:mb-0 w-full">
                     <div className="flex justify-between items-start">
                         <h3 className="font-bold text-gray-900 text-[14px]">{wf.name}</h3>
-                        <span className="text-[10px] text-gray-400 font-serif italic hidden sm:inline">{wf.whenToUse}</span>
+                        <span className="text-[10px] text-gray-400 font-serif italic hidden sm:inline text-right max-w-[200px]">{wf.whenToUse}</span>
                     </div>
                     
                     {/* Visual Chain */}
-                    <div className="flex items-center mt-3 space-x-2 overflow-x-auto pb-1">
-                        <div className="flex items-center bg-gray-50 border border-gray-100 rounded px-2 py-1 text-[10px] text-gray-500 whitespace-nowrap">Start</div>
-                        <div className="h-px w-4 bg-gray-300"></div>
-                        <div className="flex items-center bg-blue-50 border border-blue-100 rounded px-2 py-1 text-[10px] text-blue-600 font-medium whitespace-nowrap">{wf.stepCount} Steps</div>
-                        <div className="h-px w-4 bg-gray-300"></div>
-                        <div className="flex items-center bg-emerald-50 border border-emerald-100 rounded px-2 py-1 text-[10px] text-emerald-600 font-bold whitespace-nowrap">{wf.outputs}</div>
+                    <div className="flex items-center mt-4 space-x-1 overflow-x-auto pb-1 no-scrollbar">
+                        <div className="flex items-center bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                            Start
+                        </div>
+                        <div className="w-6 h-px bg-gray-200 shrink-0 relative">
+                            <div className="absolute right-0 -top-[3px] w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-gray-200 border-b-[3px] border-b-transparent"></div>
+                        </div>
+                        <div className="flex items-center bg-blue-50 border border-blue-100 rounded px-3 py-1.5 text-[10px] text-blue-600 font-bold whitespace-nowrap">
+                            {wf.stepCount} Steps
+                        </div>
+                        <div className="w-6 h-px bg-gray-200 shrink-0 relative">
+                            <div className="absolute right-0 -top-[3px] w-0 h-0 border-t-[3px] border-t-transparent border-l-[4px] border-l-gray-200 border-b-[3px] border-b-transparent"></div>
+                        </div>
+                        <div className="flex items-center bg-emerald-50 border border-emerald-100 rounded px-3 py-1.5 text-[10px] text-emerald-600 font-bold whitespace-nowrap flex-shrink-0">
+                            ✨ {wf.outputs}
+                        </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-6 pl-0 md:pl-6">
+                  <div className="flex items-center space-x-6 pl-0 md:pl-6 shrink-0">
                     <button 
                       onClick={() => toggleItem(wf, 'workflow')}
-                      className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        isSelected(wf.id) ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                      className={`px-6 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm active:scale-95 ${
+                        isSelected(wf.id) ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-white border border-gray-200 text-gray-500 hover:text-black hover:border-black'
                       }`}
                     >
-                      {isSelected(wf.id) ? 'Included' : 'Include'}
+                      {isSelected(wf.id) ? 'Included' : 'Include Workflow'}
                     </button>
                   </div>
                 </div>

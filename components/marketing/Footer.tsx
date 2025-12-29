@@ -42,6 +42,7 @@ export const MarketingFooter: React.FC<FooterProps> = ({ onNavigate }) => (
           <li onClick={() => onNavigate('Project Intelligence')} className="hover:text-white transition-colors cursor-pointer flex items-center group">
             Project Intelligence <span className="ml-2 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">✨</span>
           </li>
+          <li onClick={() => onNavigate('Execution Plan')} className="hover:text-white transition-colors cursor-pointer">Execution Plan</li>
           <li onClick={() => onNavigate('Tasks')} className="hover:text-white transition-colors cursor-pointer">Execution Manager</li>
           <li onClick={() => onNavigate('Booking')} className="pt-4 text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer font-bold flex items-center">
             Start Project Wizard <span className="ml-2">→</span>

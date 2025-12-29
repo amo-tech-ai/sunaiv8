@@ -273,6 +273,50 @@ export interface AutomationRule {
   status: 'Active' | 'Inactive';
 }
 
+export interface ExecutionAgent {
+  id: string;
+  role: string;
+  name: string;
+  status: 'idle' | 'working' | 'error';
+  currentTask?: string;
+}
+
+export interface ExecutionAutomation {
+  id: string;
+  trigger: string;
+  action: string;
+  enabled: boolean;
+}
+
+export interface ExecutionWorkflow {
+  id: string;
+  name: string;
+  stepCount: number;
+  status: 'pending' | 'active' | 'completed';
+}
+
+export interface ExecutionAuditLog {
+  id: string;
+  timestamp: string;
+  actor: string;
+  action: string;
+  outcome: string;
+}
+
+export interface ExecutionPlan {
+  id: string;
+  projectId: string;
+  version: number;
+  status: 'draft' | 'active' | 'paused' | 'completed';
+  riskLevel: 'Low' | 'Medium' | 'High';
+  startDate: string;
+  activeAgents: ExecutionAgent[];
+  automations: ExecutionAutomation[];
+  workflows: ExecutionWorkflow[];
+  tasks: ActionItem[];
+  auditLog: ExecutionAuditLog[];
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -291,6 +335,7 @@ export interface Project {
   intelligence?: ProjectIntelligence; // Cached intelligence
   
   // Execution Artifacts
+  executionPlan?: ExecutionPlan;
   activeAgents?: ActiveAgent[];
   automationRules?: AutomationRule[];
 }

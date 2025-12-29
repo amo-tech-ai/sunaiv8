@@ -15,6 +15,7 @@ import ContextStrip from './components/ContextStrip';
 import AssistantChatbot from './components/AssistantChatbot';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProjectIntelligencePanel from './components/ProjectIntelligencePanel';
+import ExecutionPlanPanel from './components/ExecutionPlanPanel'; // Import the new panel
 
 // Marketing Components
 import LandingPage from './components/marketing/LandingPage';
@@ -288,6 +289,16 @@ const App: React.FC = () => {
       );
     }
 
+    // Override routing for Full Screen Execution Plan Mode
+    if (activeRoute === 'Execution Plan' && focus.type === 'project' && focus.data) {
+      return (
+        <ExecutionPlanPanel 
+          project={focus.data as Project}
+          onClose={() => setActiveRoute('Projects')}
+        />
+      );
+    }
+
     switch (activeRoute) {
       case 'Main': 
         return <MainPanel onFocusAction={updateFocus} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />;
@@ -309,6 +320,16 @@ const App: React.FC = () => {
           onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} 
           onNavigate={handleNavigate}
           onOpenIntelligence={(p) => { updateFocus('project', p); }} // Clicking view intel simply sets focus, the 'if' block above handles the rest
+        />;
+      case 'Execution Plan':
+        // Fallback: If no project is selected but we are on this route, show projects list to pick one
+        return <ProjectsPanel 
+          projects={projects} 
+          focus={focus} 
+          onFocus={updateFocus} 
+          onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} 
+          onNavigate={handleNavigate}
+          onOpenIntelligence={(p) => { updateFocus('project', p); setActiveRoute('Project Intelligence'); }}
         />;
       case 'Tasks': 
         return <TasksPanel tasks={tasks} focus={focus} onFocus={updateFocus} onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} onUpdateTask={handleUpdateTask} onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} onLinkTasks={handleLinkTasks} />;
@@ -350,7 +371,7 @@ const App: React.FC = () => {
       <div className={`flex flex-col md:flex-row h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden ${isMarketingMode ? 'overflow-y-auto' : ''}`}>
         {!isMarketingMode ? (
           <>
-            {activeRoute !== 'Project Intelligence' && (
+            {activeRoute !== 'Project Intelligence' && activeRoute !== 'Execution Plan' && (
               <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
             )}
             <div className="flex-1 flex overflow-hidden relative">
@@ -365,7 +386,7 @@ const App: React.FC = () => {
                 />
               )}
             </div>
-            {activeRoute !== 'Project Intelligence' && (
+            {activeRoute !== 'Project Intelligence' && activeRoute !== 'Execution Plan' && (
               <RightPanel 
                 focus={focus} history={history} 
                 onFocusFromHistory={(h) => setFocus(h)}
@@ -382,8 +403,8 @@ const App: React.FC = () => {
                 projects={projects}
               />
             )}
-            {activeRoute !== 'Project Intelligence' && <ContextStrip focus={focus} />}
-            {activeRoute !== 'Project Intelligence' && <AssistantChatbot workspace={{ contacts, projects }} />}
+            {activeRoute !== 'Project Intelligence' && activeRoute !== 'Execution Plan' && <ContextStrip focus={focus} />}
+            {activeRoute !== 'Project Intelligence' && activeRoute !== 'Execution Plan' && <AssistantChatbot workspace={{ contacts, projects }} />}
           </>
         ) : (
           <div className="w-full">

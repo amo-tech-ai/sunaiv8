@@ -1,5 +1,5 @@
 
-import { ActionItem, Activity, Contact, DashboardStats, Collaborator, Project, Service } from './types';
+import { ActionItem, Activity, Contact, DashboardStats, Collaborator, Project, Service, ExecutionPlan } from './types';
 
 export const COLLABORATORS: Record<string, Collaborator> = {
   js: { id: 'js', name: 'Julian Smith' },
@@ -17,6 +17,48 @@ export const STATS: DashboardStats = {
 
 const TODAY = new Date();
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+export const NEXT_ACTIONS: ActionItem[] = [
+  {
+    id: '1',
+    title: 'Review project requirements',
+    project: 'Maison Laurent SS25',
+    priority: 'High',
+    description: 'Finalize the creative brief for the upcoming Spring/Summer 2025 campaign.',
+    collaborators: [COLLABORATORS.js, COLLABORATORS.aa],
+    status: 'Backlog'
+  }
+];
+
+export const MOCK_EXECUTION_PLAN: ExecutionPlan = {
+  id: 'ep-1',
+  projectId: 'p1',
+  version: 1,
+  status: 'draft',
+  riskLevel: 'Low',
+  startDate: new Date().toISOString(),
+  activeAgents: [
+    { id: 'ag-1', role: 'Orchestrator', name: 'Orchestrator', status: 'idle' },
+    { id: 'ag-2', role: 'Planner', name: 'Planner', status: 'working', currentTask: 'Re-calculating timeline...' },
+    { id: 'ag-3', role: 'Researcher', name: 'Researcher', status: 'idle' },
+    { id: 'ag-4', role: 'Controller', name: 'Gatekeeper', status: 'idle' }
+  ],
+  automations: [
+    { id: 'au-1', trigger: 'Proposal Accepted', action: 'Create Onboarding Tasks', enabled: true },
+    { id: 'au-2', trigger: 'Payment Received', action: 'Deploy Environment', enabled: false },
+    { id: 'au-3', trigger: 'Risk Score > 70', action: 'Notify Project Owner', enabled: true }
+  ],
+  workflows: [
+    { id: 'wf-1', name: 'Client Onboarding', stepCount: 5, status: 'pending' },
+    { id: 'wf-2', name: 'Asset Generation Loop', stepCount: 3, status: 'active' },
+    { id: 'wf-3', name: 'QA & Review', stepCount: 4, status: 'pending' }
+  ],
+  tasks: NEXT_ACTIONS,
+  auditLog: [
+    { id: 'al-1', timestamp: new Date(Date.now() - 3600000).toISOString(), actor: 'Julian Smith', action: 'Plan Created', outcome: 'Success' },
+    { id: 'al-2', timestamp: new Date(Date.now() - 1800000).toISOString(), actor: 'Orchestrator', action: 'Agent Check', outcome: 'All Systems Go' }
+  ]
+};
 
 export const MOCK_PROJECTS: Project[] = [
   { 
@@ -37,7 +79,8 @@ export const MOCK_PROJECTS: Project[] = [
       { week: 'Week 4', title: 'UAT', description: 'Internal testing with support team.', effort: 'Low' },
       { week: 'Week 5', title: 'Soft Launch', description: 'Deploy to 10% of traffic.', effort: 'Medium' },
       { week: 'Week 6', title: 'Full Release', description: 'Global rollout.', effort: 'Low' }
-    ]
+    ],
+    executionPlan: MOCK_EXECUTION_PLAN
   },
   { 
     id: 'p2', 
@@ -143,18 +186,6 @@ export const MOCK_CONTACTS: Contact[] = [
   }
 ];
 
-export const NEXT_ACTIONS: ActionItem[] = [
-  {
-    id: '1',
-    title: 'Review project requirements',
-    project: 'Maison Laurent SS25',
-    priority: 'High',
-    description: 'Finalize the creative brief for the upcoming Spring/Summer 2025 campaign.',
-    collaborators: [COLLABORATORS.js, COLLABORATORS.aa],
-    status: 'Backlog'
-  }
-];
-
 export const RECENT_ACTIVITY: Activity[] = [
   { id: 'a1', title: 'Project brief approved', project: 'Maison Laurent', time: '2h ago' }
 ];
@@ -164,6 +195,7 @@ export const NAV_ITEMS = [
   { name: 'Main', active: true },
   { name: 'Projects', active: false },
   { name: 'Project Intelligence', active: false },
+  { name: 'Execution Plan', active: false },
   { name: 'Tasks', active: false },
   { name: 'CRM', active: true },
   { name: 'Project Wizard', active: false },

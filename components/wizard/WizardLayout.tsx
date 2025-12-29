@@ -41,14 +41,15 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ onCancel, onComplete }) => 
   // Validate current step to enable "Next"
   const canProceed = () => {
     if (currentStep === 'basics') {
-      return blueprint.basics.projectName.length > 2 && blueprint.basics.companyName.length > 2;
+      return (blueprint.basics?.projectName?.length || 0) > 2 && (blueprint.basics?.companyName?.length || 0) > 2;
     }
     if (currentStep === 'scope') {
-      return !!blueprint.scope.appType && !!blueprint.scope.industry && blueprint.scope.goals.length > 5;
+      // Ensure scope object and properties exist
+      return !!blueprint.scope?.appType && !!blueprint.scope?.industry && (blueprint.scope?.goals?.length || 0) > 5;
     }
     if (currentStep === 'constraints') {
       // Constraints usually have defaults, so mostly valid unless we enforce something specific
-      return blueprint.constraints.budgetRange[1] > 0;
+      return (blueprint.constraints?.budgetRange?.[1] || 0) > 0;
     }
     return true; // Review step proceeds via specific button
   };

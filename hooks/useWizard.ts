@@ -44,7 +44,7 @@ export function useWizard() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return parsed.stepIndex || 0;
+        return typeof parsed.stepIndex === 'number' ? parsed.stepIndex : 0;
       }
     } catch (e) {}
     return 0;
@@ -55,7 +55,16 @@ export function useWizard() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return parsed.blueprint || { ...INITIAL_BLUEPRINT, id: `draft-${Date.now()}` };
+        // Robust deep merge to ensure all properties exist even if localStorage has stale/partial data
+        const loaded = parsed.blueprint || {};
+        return {
+            ...INITIAL_BLUEPRINT,
+            ...loaded,
+            id: loaded.id || `draft-${Date.now()}`,
+            basics: { ...INITIAL_BLUEPRINT.basics, ...loaded.basics },
+            scope: { ...INITIAL_BLUEPRINT.scope, ...loaded.scope },
+            constraints: { ...INITIAL_BLUEPRINT.constraints, ...loaded.constraints },
+        };
       }
     } catch (e) {}
     return { ...INITIAL_BLUEPRINT, id: `draft-${Date.now()}` };
