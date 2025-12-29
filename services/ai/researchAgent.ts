@@ -4,8 +4,9 @@ import { getAI } from "./base";
 import { Contact, MarketReport, ResearchResult } from "../../types";
 
 /**
- * Identifies local industry hubs using Gemini 3 Flash and Google Maps grounding.
+ * Identifies local industry hubs using Gemini 2.5 Flash and Google Maps grounding.
  */
+// Fix: Use gemini-2.5-flash for Maps grounding compatibility.
 export const getLocalIntelligence = async (company: string, category: string, location?: { lat: number; lng: number }): Promise<string> => {
   const ai = getAI();
   const prompt = `Identify local industry hubs and relevant office locations for ${company} in ${category}. 
@@ -14,7 +15,7 @@ export const getLocalIntelligence = async (company: string, category: string, lo
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         tools: [{ googleMaps: {} }],

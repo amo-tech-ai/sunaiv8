@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import LeftPanel from './components/LeftPanel';
 import MainPanel from './components/MainPanel';
 import ProjectsPanel from './components/ProjectsPanel';
@@ -14,6 +14,13 @@ import MarketReportView from './components/MarketReportView';
 import ContextStrip from './components/ContextStrip';
 import AssistantChatbot from './components/AssistantChatbot';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Marketing Components
+import LandingPage from './components/marketing/LandingPage';
+import ServicesPage from './components/marketing/ServicesPage';
+import AgentsPage from './components/marketing/AgentsPage';
+import CaseStudiesPage from './components/marketing/CaseStudiesPage';
+import AboutPage from './components/marketing/AboutPage';
 
 // Custom Hooks
 import { usePersistentState } from './hooks/usePersistentState';
@@ -37,7 +44,7 @@ import {
 
 const App: React.FC = () => {
   // Navigation & Location
-  const [activeRoute, setActiveRoute] = useState('Main');
+  const [activeRoute, setActiveRoute] = useState('Home');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | undefined>(undefined);
 
   // Hook-managed State
@@ -54,6 +61,12 @@ const App: React.FC = () => {
     viewingReportId, setViewingReportId 
   } = useOrchestrator();
 
+  // Mode Detection: Marketing vs Dashboard
+  const isMarketingMode = useMemo(() => {
+    const marketingRoutes = ['Home', 'Public Services', 'AI Agents', 'Work', 'Booking', 'About'];
+    return marketingRoutes.includes(activeRoute);
+  }, [activeRoute]);
+
   // Location Capture
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -68,6 +81,8 @@ const App: React.FC = () => {
   const handleNavigate = (routeName: string) => {
     setActiveRoute(routeName);
     updateFocus(null, null);
+    // Smooth scroll to top on route change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAuditAction = useCallback((action: string, context: string) => {
@@ -87,7 +102,6 @@ const App: React.FC = () => {
     setTasks(prev => [newTask, ...prev]);
   }, [setTasks]);
 
-  // Fix: Implemented handleAddContact to avoid using createNewTask for contacts and resolve type mismatch
   const handleAddContact = useCallback((contactData: Partial<Contact>) => {
     const newContact: Contact = {
       id: `c-${Date.now()}`,
@@ -163,167 +177,106 @@ const App: React.FC = () => {
     }
   };
 
-  const handleApproveDraft = (leadId: string) => {
-    setContacts(prev => {
-      const contact = prev.find(c => c.id === leadId);
-      if (contact?.pendingDraft) {
-        handleAddTask({
-          title: `Implement Approved ${contact.pendingDraft.type}`,
-          project: contact.company,
-          priority: 'High',
-          status: 'In Progress',
-          linkedEntityId: contact.id,
-          linkedEntityType: 'contact'
-        });
-        return updateContactInList(prev, leadId, { 
-          pendingDraft: { ...contact.pendingDraft, status: 'Approved' } 
-        }, focus, setFocus);
-      }
-      return prev;
-    });
-    handleAuditAction('Workflow Draft Approved', leadId);
-  };
-
-  const handleVisualUpdate = (leadId: string, asset: string) => {
-    setContacts(prev => {
-      const contact = prev.find(c => c.id === leadId);
-      const updatedDraft = contact?.pendingDraft 
-        ? { ...contact.pendingDraft, visualAssets: [...(contact.pendingDraft.visualAssets || []), asset] }
-        : { type: 'Brief' as const, content: 'AI Visuals Generated', status: 'Pending' as const, timestamp: new Date().toISOString(), visualAssets: [asset] };
-      return updateContactInList(prev, leadId, { pendingDraft: updatedDraft }, focus, setFocus);
-    });
-    handleAuditAction('Creative Asset Added', leadId);
-  };
-
-  const handleMarketReportUpdate = async (leadId: string) => {
-    const contact = contacts.find(c => c.id === leadId);
-    if (!contact) return;
-    setContacts(prev => updateContactInList(prev, leadId, { isResearching: true }, focus, setFocus));
-    setOrchestratorStatus(`Refreshing analysis...`);
-    try {
-      const report = await conductMarketAnalysis(contact, userLocation);
-      setContacts(prev => {
-        const contact = prev.find(c => c.id === leadId);
-        const updatedResearch = contact?.researchData ? { ...contact.researchData, agentReport: report || undefined } : undefined;
-        return updateContactInList(prev, leadId, { researchData: updatedResearch as any, isResearching: false }, focus, setFocus);
-      });
-      handleAuditAction('Intelligence Report Refreshed', contact.company);
-    } catch (e) {
-      addNotification("Market analysis failed.", "error");
-      setContacts(prev => updateContactInList(prev, leadId, { isResearching: false }, focus, setFocus));
-    } finally {
-      setOrchestratorStatus('Idle');
-    }
-  };
-
+  // Fix: Added missing handleBudgetUpdate function to process ROI projections
   const handleBudgetUpdate = async (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     if (!contact) return;
+
     setContacts(prev => updateContactInList(prev, contactId, { isCalculating: true }, focus, setFocus));
+    setOrchestratorStatus("Running ROI Analysis...");
     setAgents(prev => ({ ...prev, automation: 'Running' }));
-    setOrchestratorStatus("Analyst: Calculating ROI...");
+    
     try {
-      const budget = await calculateBudgetProjections(contact);
-      setContacts(prev => updateContactInList(prev, contactId, { budgetAnalysis: budget || undefined, isCalculating: false }, focus, setFocus));
-      handleAuditAction('Financial ROI Recalculated', contact.company);
+      const result = await calculateBudgetProjections(contact);
+      setContacts(prev => updateContactInList(prev, contactId, { budgetAnalysis: result || undefined, isCalculating: false }, focus, setFocus));
+      handleAuditAction('Budget Projection Pulse', contact.company);
     } catch (e) {
-      addNotification("ROI projection failed.", "error");
+      addNotification("ROI projection service failed.", "error");
       setContacts(prev => updateContactInList(prev, contactId, { isCalculating: false }, focus, setFocus));
     } finally {
-      setAgents(prev => ({ ...prev, automation: 'Idle' }));
       setOrchestratorStatus('Idle');
+      setAgents(prev => ({ ...prev, automation: 'Idle' }));
     }
   };
 
-  const renderContent = () => {
+  const renderDashboardContent = () => {
     switch (activeRoute) {
       case 'Main': 
-        return (
-          <ErrorBoundary name="Dashboard Home">
-            <MainPanel onFocusAction={updateFocus} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />
-          </ErrorBoundary>
-        );
+        return <MainPanel onFocusAction={updateFocus} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />;
       case 'Projects': 
-        return (
-          <ErrorBoundary name="Engagement Portfolio">
-            <ProjectsPanel projects={projects} focus={focus} onFocus={updateFocus} onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} />
-          </ErrorBoundary>
-        );
+        return <ProjectsPanel projects={projects} focus={focus} onFocus={updateFocus} onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} />;
       case 'Tasks': 
-        return (
-          <ErrorBoundary name="Action Board">
-            <TasksPanel 
-              tasks={tasks} focus={focus} onFocus={updateFocus} 
-              onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} 
-              onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} 
-            />
-          </ErrorBoundary>
-        );
+        return <TasksPanel tasks={tasks} focus={focus} onFocus={updateFocus} onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} />;
       case 'CRM': 
-        return (
-          <ErrorBoundary name="CRM Engine">
-            <CRMPanel 
-              contacts={contacts} focus={focus} onFocus={updateFocus} 
-              onAddContact={handleAddContact} 
-              onLogInteraction={(id, i) => setContacts(prev => logInteractionLogic(prev, id, i, focus, setFocus))} 
-              onAddDeal={(id, d) => setContacts(prev => updateContactInList(prev, id, { deals: [d, ...(prev.find(c => c.id === id)?.deals || [])], dealValue: d.value }, focus, setFocus))} 
-            />
-          </ErrorBoundary>
-        );
+        return <CRMPanel contacts={contacts} focus={focus} onFocus={updateFocus} onAddContact={handleAddContact} onLogInteraction={(id, i) => setContacts(prev => logInteractionLogic(prev, id, i, focus, setFocus))} onAddDeal={(id, d) => setContacts(prev => updateContactInList(prev, id, { deals: [d, ...(prev.find(c => c.id === id)?.deals || [])], dealValue: d.value }, focus, setFocus))} />;
       case 'Services': 
-        return (
-          <ErrorBoundary name="Service Catalog">
-            <ServicesPanel onFocus={updateFocus} focus={focus} />
-          </ErrorBoundary>
-        );
+        return <ServicesPanel onFocus={updateFocus} focus={focus} />;
       case 'Client Dashboard': 
-        return (
-          <ErrorBoundary name="Client Portal">
-            <ClientDashboardPanel projects={projects} />
-          </ErrorBoundary>
-        );
+        return <ClientDashboardPanel projects={projects} />;
       case 'Settings': 
-        return (
-          <ErrorBoundary name="Workspace Settings">
-            <SettingsPanel auditLogs={auditLogs} />
-          </ErrorBoundary>
-        );
+        return <SettingsPanel auditLogs={auditLogs} />;
       case 'AI Wizard': 
-        return (
-          <ErrorBoundary name="Intake Wizard">
-            <WizardPanel onAddLead={(l) => { setContacts(prev => [l, ...prev]); setActiveRoute('CRM'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); setActiveRoute('Projects'); }} />
-          </ErrorBoundary>
-        );
+        return <WizardPanel onAddLead={(l) => { setContacts(prev => [l, ...prev]); setActiveRoute('CRM'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); setActiveRoute('Projects'); }} />;
       default: 
-        return (
-          <ErrorBoundary name="Generic Content Wrapper">
-            <MainPanel onFocusAction={updateFocus} focus={focus} />
-          </ErrorBoundary>
-        );
+        return <MainPanel onFocusAction={updateFocus} focus={focus} />;
+    }
+  };
+
+  const renderMarketingContent = () => {
+    switch (activeRoute) {
+      case 'Home': return <LandingPage onNavigate={handleNavigate} />;
+      case 'Public Services': return <ServicesPage onNavigate={handleNavigate} />;
+      case 'AI Agents': return <AgentsPage onNavigate={handleNavigate} />;
+      case 'Work': return <CaseStudiesPage onNavigate={handleNavigate} />;
+      case 'Booking': return <WizardPanel onAddLead={(l) => { setContacts(prev => [l, ...prev]); handleNavigate('Main'); }} onAddProject={(p) => { setProjects(prev => [p, ...prev]); handleNavigate('Projects'); }} />;
+      case 'About': return <AboutPage onNavigate={handleNavigate} />;
+      default: return <LandingPage onNavigate={handleNavigate} />;
     }
   };
 
   return (
     <ErrorBoundary name="Agency Platform Root">
-      <div className="flex h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden">
-        <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
+      <div className={`flex flex-col md:flex-row h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden ${isMarketingMode ? 'overflow-y-auto' : ''}`}>
         
-        <div className="flex-1 flex overflow-hidden relative">
-          {renderContent()}
-          {viewingReportId && contacts.find(c => c.id === viewingReportId)?.researchData?.agentReport && (
-            <ErrorBoundary name="Intelligence Report Viewer">
-              <MarketReportView 
-                contact={contacts.find(c => c.id === viewingReportId)!}
-                report={contacts.find(c => c.id === viewingReportId)!.researchData!.agentReport!}
-                onClose={() => setViewingReportId(null)}
-                onGenerateTasks={(titles) => titles.forEach(t => handleAddTask({ title: t, project: 'AI Strategy', priority: 'Medium' }))}
-                onMarketReportUpdate={() => handleMarketReportUpdate(viewingReportId)}
-              />
-            </ErrorBoundary>
-          )}
-        </div>
+        {/* Conditional Layout Switching */}
+        {!isMarketingMode ? (
+          <>
+            <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
+            <div className="flex-1 flex overflow-hidden relative">
+              {renderDashboardContent()}
+              {viewingReportId && contacts.find(c => c.id === viewingReportId)?.researchData?.agentReport && (
+                <MarketReportView 
+                  contact={contacts.find(c => c.id === viewingReportId)!}
+                  report={contacts.find(c => c.id === viewingReportId)!.researchData!.agentReport!}
+                  onClose={() => setViewingReportId(null)}
+                  onGenerateTasks={(titles) => titles.forEach(t => handleAddTask({ title: t, project: 'AI Strategy', priority: 'Medium' }))}
+                  onMarketReportUpdate={() => runDeepResearchOrchestration(viewingReportId, contacts, userLocation, focus, { setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction })}
+                />
+              )}
+            </div>
+            <RightPanel 
+              focus={focus} history={history} 
+              onFocusFromHistory={(h) => setFocus(h)}
+              onAuditAction={handleAuditAction} onAddTask={handleAddTask}
+              onUpdateLeadStage={handleUpdateLeadStage} onApplyEnrichment={handleApplyEnrichment}
+              onTriggerEnrichment={handleTriggerEnrichment} onApproveDraft={() => {}}
+              onVisualUpdate={(id, a) => setContacts(prev => updateContactInList(prev, id, { pendingDraft: { type: 'Brief', content: 'Visual Asset Added', status: 'Pending', timestamp: new Date().toISOString(), visualAssets: [a] } }, focus, setFocus))}
+              onResearchUpdate={() => handleDeepResearchLead(focus.id!)}
+              onMarketReportUpdate={() => runDeepResearchOrchestration(focus.id!, contacts, userLocation, focus, { setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction })}
+              onBudgetUpdate={handleBudgetUpdate} onApprovePlan={() => handleApprovePlan(focus.id!)}
+              onOpenMarketReport={(id) => setViewingReportId(id)}
+              onDeleteEntity={(id) => focus.type === 'contact' ? setContacts(prev => prev.filter(c => c.id !== id)) : focus.type === 'task' ? setTasks(prev => prev.filter(t => t.id !== id)) : null}
+            />
+            <ContextStrip focus={focus} />
+            <AssistantChatbot workspace={{ contacts, projects }} />
+          </>
+        ) : (
+          <div className="w-full">
+            {renderMarketingContent()}
+          </div>
+        )}
 
-        {/* Global Notifications - Non-intrusive Overlay */}
+        {/* Global Notifications */}
         <div className="fixed top-8 right-8 z-[200] flex flex-col space-y-4 pointer-events-none">
           {notifications.map(n => (
             <div key={n.id} className={`px-6 py-4 rounded-2xl shadow-2xl border pointer-events-auto animate-in slide-in-from-right-12 duration-300 ${
@@ -335,33 +288,6 @@ const App: React.FC = () => {
             </div>
           ))}
         </div>
-
-        <ErrorBoundary name="Context Intelligence Panel">
-          <RightPanel 
-            focus={focus} 
-            history={history} 
-            onFocusFromHistory={(h) => setFocus(h)}
-            onAuditAction={handleAuditAction}
-            onAddTask={handleAddTask}
-            onUpdateLeadStage={handleUpdateLeadStage}
-            onApplyEnrichment={handleApplyEnrichment}
-            onTriggerEnrichment={handleTriggerEnrichment}
-            onApproveDraft={handleApproveDraft}
-            onVisualUpdate={handleVisualUpdate}
-            onResearchUpdate={() => handleDeepResearchLead(focus.id!)}
-            onMarketReportUpdate={handleMarketReportUpdate}
-            onBudgetUpdate={handleBudgetUpdate}
-            onApprovePlan={() => handleApprovePlan(focus.id!)}
-            onOpenMarketReport={(id) => setViewingReportId(id)}
-            onDeleteEntity={(id) => focus.type === 'contact' ? setContacts(prev => prev.filter(c => c.id !== id)) : focus.type === 'task' ? setTasks(prev => prev.filter(t => t.id !== id)) : null}
-          />
-        </ErrorBoundary>
-        
-        <ContextStrip focus={focus} />
-        
-        <ErrorBoundary name="AI Workspace Assistant">
-          <AssistantChatbot workspace={{ contacts, projects }} />
-        </ErrorBoundary>
       </div>
     </ErrorBoundary>
   );

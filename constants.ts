@@ -95,7 +95,6 @@ export const NEXT_ACTIONS: ActionItem[] = [
     priority: 'High',
     description: 'Finalize the creative brief for the upcoming Spring/Summer 2025 campaign.',
     collaborators: [COLLABORATORS.js, COLLABORATORS.aa],
-    // Fix: Removed 'timeline' and 'phase' as they are not properties of ActionItem interface
     status: 'Backlog'
   }
 ];
@@ -109,7 +108,6 @@ export const NAV_ITEMS = [
   { name: 'Main', active: true },
   { name: 'Projects', active: false },
   { name: 'Tasks', active: false },
-  { name: 'Services', active: false },
   { name: 'CRM', active: true },
-  { name: 'Client Dashboard', active: false },
+  { name: 'Settings', active: false },
 ];
