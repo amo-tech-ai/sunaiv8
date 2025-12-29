@@ -13,7 +13,7 @@ interface State {
   errorId: string;
 }
 
-class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,

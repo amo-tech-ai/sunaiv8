@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Contact, ResearchResult, MarketReport, ProjectPlan, FocusState } from '../types';
 import { deepResearchContact, conductMarketAnalysis, generateProjectPlan } from './geminiService';
 

@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Contact, Interaction, Deal, PipelineStage, EnrichmentSuggestion, FocusState } from '../types';
 
 /**
