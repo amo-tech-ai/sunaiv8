@@ -200,6 +200,79 @@ export interface ActionItem {
   dependencies?: string[];
 }
 
+// --- PROJECT INTELLIGENCE TYPES ---
+
+export interface RecAgent {
+  id: string;
+  name: string;
+  role: string;
+  whyNeeded: string;
+  produces: string;
+  confidence: 'High' | 'Medium' | 'Low';
+}
+
+export interface RecAutomation {
+  id: string;
+  trigger: string;
+  action: string;
+  outcome: string;
+  riskLevel: 'Low' | 'Medium' | 'High';
+}
+
+export interface RecWorkflow {
+  id: string;
+  name: string;
+  stepCount: number;
+  outputs: string;
+  whenToUse: string;
+}
+
+export interface RecJourney {
+  id: string;
+  actor: string;
+  steps: string[];
+  valueProp: string;
+}
+
+export interface RecExample {
+  id: string;
+  scenario: string;
+  built: string;
+  outcome: string;
+}
+
+export interface ProjectIntelligence {
+  summary: {
+    complexity: 'Low' | 'Medium' | 'High';
+    deliveryModel: 'MVP' | 'Phased' | 'Full';
+    primaryGoal: string;
+  };
+  agents: RecAgent[];
+  automations: RecAutomation[];
+  workflows: RecWorkflow[];
+  journeys: RecJourney[];
+  examples: RecExample[];
+}
+
+// --- EXECUTION TYPES ---
+
+export interface ActiveAgent {
+  id: string;
+  name: string;
+  role: string;
+  projectId: string;
+  status: 'Active' | 'Paused';
+  deployedAt: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  projectId: string;
+  trigger: string;
+  action: string;
+  status: 'Active' | 'Inactive';
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -215,6 +288,11 @@ export interface Project {
   team?: Collaborator[];
   analysis?: ProjectAnalysis;
   isAnalyzing?: boolean;
+  intelligence?: ProjectIntelligence; // Cached intelligence
+  
+  // Execution Artifacts
+  activeAgents?: ActiveAgent[];
+  automationRules?: AutomationRule[];
 }
 
 export interface AuditLog {

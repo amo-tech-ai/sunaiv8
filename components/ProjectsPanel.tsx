@@ -10,6 +10,7 @@ interface ProjectsPanelProps {
   focus: FocusState;
   onAddProject: (p: Partial<Project>) => void;
   onNavigate?: (route: string) => void;
+  onOpenIntelligence?: (project: Project) => void; // Added prop
 }
 
 const ProjectRow: React.FC<{ 
@@ -18,7 +19,8 @@ const ProjectRow: React.FC<{
   isExpanded: boolean;
   onClick: () => void;
   onToggleTimeline: (e: React.MouseEvent) => void;
-}> = ({ project, isActive, isExpanded, onClick, onToggleTimeline }) => {
+  onOpenIntelligence?: () => void;
+}> = ({ project, isActive, isExpanded, onClick, onToggleTimeline, onOpenIntelligence }) => {
   const badgeColors = {
     'AI': 'bg-purple-50 text-purple-600',
     'Web App': 'bg-blue-50 text-blue-600',
@@ -72,6 +74,14 @@ const ProjectRow: React.FC<{
           </div>
         </div>
         <div className="flex items-center space-x-8 text-[12px]">
+          {/* Intelligence Trigger */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); onOpenIntelligence && onOpenIntelligence(); }}
+            className="hidden group-hover:flex items-center space-x-1 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-[9px] font-bold uppercase tracking-widest border border-purple-100 hover:bg-purple-100 transition-all"
+          >
+            <span>✨ View Intelligence</span>
+          </button>
+
           {project.team && project.team.length > 0 && (
             <div className="flex -space-x-2">
               {project.team.map((m) => (
@@ -112,7 +122,7 @@ const ProjectRow: React.FC<{
   );
 };
 
-const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus, onAddProject, onNavigate }) => {
+const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus, onAddProject, onNavigate, onOpenIntelligence }) => {
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
 
@@ -183,6 +193,7 @@ const ProjectsPanel: React.FC<ProjectsPanelProps> = ({ projects, onFocus, focus,
                   isExpanded={expandedProjectId === project.id}
                   onClick={() => onFocus('project', project)}
                   onToggleTimeline={(e) => handleToggleTimeline(e, project.id)}
+                  onOpenIntelligence={() => onOpenIntelligence && onOpenIntelligence(project)}
                 />
               ))}
             </div>

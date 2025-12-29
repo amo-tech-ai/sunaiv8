@@ -14,6 +14,7 @@ import MarketReportView from './components/MarketReportView';
 import ContextStrip from './components/ContextStrip';
 import AssistantChatbot from './components/AssistantChatbot';
 import ErrorBoundary from './components/ErrorBoundary';
+import ProjectIntelligencePanel from './components/ProjectIntelligencePanel';
 
 // Marketing Components
 import LandingPage from './components/marketing/LandingPage';
@@ -32,13 +33,15 @@ import { useNotifications } from './hooks/useNotifications';
 import { updateContactInList, applyEnrichmentLogic, logInteractionLogic } from './services/contactService';
 import { createNewTask, updateTaskStatusInList } from './services/taskService';
 import { runDeepResearchOrchestration } from './services/orchestratorService';
+import { executeIntelligencePlan } from './services/workflowEngine';
 
 // Types & Services
 import { Contact, Project, AuditLog, PipelineStage, ActionItem, Interaction, Deal, EnrichmentSuggestion, ProjectAnalysis } from './types';
 import { NAV_ITEMS, MOCK_CONTACTS, MOCK_PROJECTS, NEXT_ACTIONS } from './constants';
 import { 
   calculateBudgetProjections, 
-  enrichLeadData
+  enrichLeadData,
+  generateWorkflowDraft
 } from './services/geminiService';
 
 const App: React.FC = () => {
@@ -80,6 +83,7 @@ const App: React.FC = () => {
   const handleNavigate = (routeName: string) => {
     setActiveRoute(routeName);
     updateFocus(null, null);
+    // Smooth scroll to top on route change
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -148,7 +152,7 @@ const App: React.FC = () => {
     setContacts(prev => updateContactInList(prev, leadId, { pipelineStage: nextStage }, focus, setFocus));
   }, [focus, setContacts, setFocus]);
 
-  // Orchestrator Actions
+  // Orchestrator Actions (Agentic Workflows)
   const handleDeepResearchLead = async (leadId: string) => {
     await runDeepResearchOrchestration(leadId, contacts, userLocation, focus, {
       setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction
@@ -230,12 +234,82 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleCommitIntelligencePlan = async (items: any[]) => {
+    if (!focus.data || focus.type !== 'project') return;
+    const project = focus.data as Project;
+
+    setOrchestratorStatus("Operationalizing Intelligence Plan...");
+    
+    try {
+      const { agents: newAgents, automations: newAutomations, tasks: newTasks } = await executeIntelligencePlan(items, project);
+      
+      // Update Project with new execution artifacts
+      setProjects(prev => prev.map(p => {
+        if (p.id === project.id) {
+          const updated = { 
+            ...p, 
+            activeAgents: [...(p.activeAgents || []), ...newAgents],
+            automationRules: [...(p.automationRules || []), ...newAutomations]
+          };
+          if (focus.id === project.id) setFocus(f => ({ ...f, data: updated }));
+          return updated;
+        }
+        return p;
+      }));
+
+      // Create generated tasks
+      const taskPayloads: Partial<ActionItem>[] = newTasks.map(t => ({
+        ...t,
+        id: undefined // Let handleAddTasks generate IDs
+      }));
+      handleAddTasks(taskPayloads);
+
+      handleAuditAction('Intelligence Execution', `Deployed ${newAgents.length} agents, ${newAutomations.length} automations, ${newTasks.length} tasks`);
+      setActiveRoute('Projects'); 
+      addNotification(`Plan executed successfully. ${newAgents.length} agents online.`, 'success');
+
+    } catch (e) {
+      console.error("Execution error", e);
+      addNotification("Failed to execute intelligence plan.", "error");
+    } finally {
+      setOrchestratorStatus("Idle");
+    }
+  };
+
   const renderDashboardContent = () => {
+    // Override routing for Full Screen Intelligence Mode
+    if (activeRoute === 'Project Intelligence' && focus.type === 'project' && focus.data) {
+      return (
+        <ProjectIntelligencePanel 
+          project={focus.data as Project}
+          onClose={() => setActiveRoute('Projects')}
+          onCommitPlan={handleCommitIntelligencePlan}
+        />
+      );
+    }
+
     switch (activeRoute) {
       case 'Main': 
         return <MainPanel onFocusAction={updateFocus} focus={focus} orchestratorStatus={orchestratorStatus} agents={agents} auditLogs={auditLogs.slice(0, 5)} />;
       case 'Projects': 
-        return <ProjectsPanel projects={projects} focus={focus} onFocus={updateFocus} onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} onNavigate={handleNavigate} />;
+        return <ProjectsPanel 
+          projects={projects} 
+          focus={focus} 
+          onFocus={updateFocus} 
+          onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} 
+          onNavigate={handleNavigate}
+          onOpenIntelligence={(p) => { updateFocus('project', p); setActiveRoute('Project Intelligence'); }}
+        />;
+      case 'Project Intelligence':
+        // Fallback: If no project is selected but we are on this route, show projects list to pick one
+        return <ProjectsPanel 
+          projects={projects} 
+          focus={focus} 
+          onFocus={updateFocus} 
+          onAddProject={(p) => setProjects(prev => [p as Project, ...prev])} 
+          onNavigate={handleNavigate}
+          onOpenIntelligence={(p) => { updateFocus('project', p); }} // Clicking view intel simply sets focus, the 'if' block above handles the rest
+        />;
       case 'Tasks': 
         return <TasksPanel tasks={tasks} focus={focus} onFocus={updateFocus} onUpdateTaskStatus={(id, s) => setTasks(prev => updateTaskStatusInList(prev, id, s))} onUpdateTask={handleUpdateTask} onDeleteTask={(id) => setTasks(prev => prev.filter(t => t.id !== id))} onLinkTasks={handleLinkTasks} />;
       case 'CRM': 
@@ -276,7 +350,9 @@ const App: React.FC = () => {
       <div className={`flex flex-col md:flex-row h-screen w-full bg-[#fafafa] selection:bg-black selection:text-white overflow-hidden ${isMarketingMode ? 'overflow-y-auto' : ''}`}>
         {!isMarketingMode ? (
           <>
-            <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
+            {activeRoute !== 'Project Intelligence' && (
+              <LeftPanel activeRoute={activeRoute} onNavigate={handleNavigate} navItems={NAV_ITEMS} />
+            )}
             <div className="flex-1 flex overflow-hidden relative">
               {renderDashboardContent()}
               {viewingReportId && contacts.find(c => c.id === viewingReportId)?.researchData?.agentReport && (
@@ -289,23 +365,25 @@ const App: React.FC = () => {
                 />
               )}
             </div>
-            <RightPanel 
-              focus={focus} history={history} 
-              onFocusFromHistory={(h) => setFocus(h)}
-              onAuditAction={handleAuditAction} onAddTask={handleAddTask}
-              onUpdateLeadStage={handleUpdateLeadStage} onApplyEnrichment={handleApplyEnrichment}
-              onTriggerEnrichment={handleTriggerEnrichment} onApproveDraft={() => {}}
-              onVisualUpdate={(id, a) => setContacts(prev => updateContactInList(prev, id, { pendingDraft: { type: 'Brief', content: 'Visual Asset Added', status: 'Pending', timestamp: new Date().toISOString(), visualAssets: [a] } }, focus, setFocus))}
-              onResearchUpdate={() => handleDeepResearchLead(focus.id!)}
-              onMarketReportUpdate={() => runDeepResearchOrchestration(focus.id!, contacts, userLocation, focus, { setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction })}
-              onBudgetUpdate={handleBudgetUpdate} onApprovePlan={() => handleApprovePlan(focus.id!)}
-              onOpenMarketReport={(id) => setViewingReportId(id)}
-              onDeleteEntity={(id) => focus.type === 'contact' ? setContacts(prev => prev.filter(c => c.id !== id)) : focus.type === 'task' ? setTasks(prev => prev.filter(t => t.id !== id)) : null}
-              onProjectAnalysisUpdate={handleProjectAnalysisUpdate}
-              projects={projects}
-            />
-            <ContextStrip focus={focus} />
-            <AssistantChatbot workspace={{ contacts, projects }} />
+            {activeRoute !== 'Project Intelligence' && (
+              <RightPanel 
+                focus={focus} history={history} 
+                onFocusFromHistory={(h) => setFocus(h)}
+                onAuditAction={handleAuditAction} onAddTask={handleAddTask}
+                onUpdateLeadStage={handleUpdateLeadStage} onApplyEnrichment={handleApplyEnrichment}
+                onTriggerEnrichment={handleTriggerEnrichment} onApproveDraft={() => {}}
+                onVisualUpdate={(id, a) => setContacts(prev => updateContactInList(prev, id, { pendingDraft: { type: 'Brief', content: 'Visual Asset Added', status: 'Pending', timestamp: new Date().toISOString(), visualAssets: [a] } }, focus, setFocus))}
+                onResearchUpdate={() => handleDeepResearchLead(focus.id!)}
+                onMarketReportUpdate={() => runDeepResearchOrchestration(focus.id!, contacts, userLocation, focus, { setContacts, setAgents, setOrchestratorStatus, setFocus, addNotification, handleAuditAction })}
+                onBudgetUpdate={handleBudgetUpdate} onApprovePlan={() => handleApprovePlan(focus.id!)}
+                onOpenMarketReport={(id) => setViewingReportId(id)}
+                onDeleteEntity={(id) => focus.type === 'contact' ? setContacts(prev => prev.filter(c => c.id !== id)) : focus.type === 'task' ? setTasks(prev => prev.filter(t => t.id !== id)) : null}
+                onProjectAnalysisUpdate={handleProjectAnalysisUpdate}
+                projects={projects}
+              />
+            )}
+            {activeRoute !== 'Project Intelligence' && <ContextStrip focus={focus} />}
+            {activeRoute !== 'Project Intelligence' && <AssistantChatbot workspace={{ contacts, projects }} />}
           </>
         ) : (
           <div className="w-full">
